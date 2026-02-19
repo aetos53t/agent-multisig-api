@@ -216,8 +216,10 @@ export function createPSBT(input: CreatePSBTInput): PSBTResult {
         script: p2trOutput.script,
         amount: utxo.amount,
       },
-      // Spread the full taproot info (includes tapInternalKey, tapMerkleRoot, tapLeafScript)
-      ...p2trOutput,
+      // Taproot script-path requires these fields
+      tapInternalKey: p2trOutput.tapInternalKey,
+      tapMerkleRoot: p2trOutput.tapMerkleRoot,
+      tapLeafScript: p2trOutput.tapLeafScript,
     });
   }
   
