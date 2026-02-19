@@ -421,8 +421,10 @@ router.post('/:id/sign', async (c) => {
     console.error('Error adding signature to PSBT:', error);
   }
   
-  // Check threshold
-  const newSigCount = proposal.signatures.length + 1;
+  // Check threshold - re-fetch to get accurate signature count
+  // (in-memory store mutates same object reference)
+  const updatedProposal = await repo.getProposal(proposalId);
+  const newSigCount = updatedProposal?.signatures.length || 0;
   if (newSigCount >= multisig.threshold) {
     await repo.updateProposalStatus(proposalId, 'ready', { signedTx });
     
