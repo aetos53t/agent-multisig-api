@@ -1,0 +1,911 @@
+openapi: 3.1.0
+info:
+  title: Agent Multisig Coordination API
+  description: |
+    Coordinate multi-signature transactions across AI agents on any chain.
+    
+    ## Overview
+    
+    This API enables multiple AI agents to share custody of crypto assets through
+    coordinated multisig. Each agent holds their own private key (via aibtc, Bankr,
+    Coinbase AgentKit, etc.) and the API coordinates signing when spending from shared addresses.
+    
+    ## Supported Chains
+    
+    | Chain | Multisig Type | Status |
+    |-------|--------------|--------|
+    | Bitcoin | Taproot (P2TR) script-path | ✅ Ready |
+    | Ethereum | Safe (Gnosis) smart contract | ✅ Ready |
+    | Base | Safe smart contract | ✅ Ready |
+    | Arbitrum | Safe smart contract | ✅ Ready |
+    | Stacks | SIP-018 structured data | 🔜 Coming |
+    | Solana | Squads Protocol | 🔜 Coming |
+    
+    ## Flow
+    
+    ### Bitcoin (Taproot)
+    1. **Create Multisig** - Register agents → Generate P2TR address
+    2. **Receive Funds** - Send BTC to the multisig address
+    3. **Create Proposal** - One agent proposes a spend → PSBT created
+    4. **Sign** - Each required agent signs the sighash (Schnorr)
+    5. **Finalize & Broadcast** - Once threshold reached, submit to network
+    
+    ### EVM (Safe)
+    1. **Create Vault** - Register agents → Deploy Safe contract
+    2. **Receive Funds** - Send ETH/tokens to the Safe address
+    3. **Create Proposal** - One agent proposes → safeTxHash computed
+    4. **Sign** - Each required agent signs EIP-712 typed data (ECDSA)
+    5. **Execute** - Once threshold reached, call execTransaction
+    
+    ## Supported Providers
+    
+    - **aibtc** - AIBTC MCP Server (Bitcoin + Stacks)
+    - **bankr** - Bankr Agent API (EVM chains)
+    - **agentkit** - Coinbase AgentKit (EVM + Solana)
+    - **crossmint** - Crossmint custodial wallets
+    - **clawcash** - OpenClaw native wallets (Bitcoin)
+    - **custom** - Bring your own keys
+    
+  version: 0.1.0
+  contact:
+    name: Agent Multisig API
+    url: https://agentmultisig.dev
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.agentmultisig.dev/v1
+    description: Production
+  - url: http://localhost:3000/v1
+    description: Local development
+
+tags:
+  - name: Multisigs
+    description: Create and manage multisig wallets
+  - name: Proposals
+    description: Create and sign spending proposals
+  - name: Agents
+    description: Register and manage agents
+  - name: Webhooks
+    description: Event notifications
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: 0.1.0
+
+  /multisigs:
+    post:
+      tags: [Multisigs]
+      summary: Create a new multisig
+      operationId: createMultisig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MultisigCreateInput'
+            example:
+              name: "Treasury Alpha"
+              chainId: "bitcoin-mainnet"
+              threshold: 2
+              agents:
+                - id: "agent-alice"
+                  name: "Alice"
+                  publicKey: "02abc123..."
+                  provider: "aibtc"
+                - id: "agent-bob"
+                  name: "Bob"  
+                  publicKey: "03def456..."
+                  provider: "aibtc"
+                - id: "agent-carol"
+                  name: "Carol"
+                  publicKey: "02789abc..."
+                  provider: "custom"
+      responses:
+        '201':
+          description: Multisig created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultisigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    get:
+      tags: [Multisigs]
+      summary: List all multisigs
+      operationId: listMultisigs
+      responses:
+        '200':
+          description: List of multisigs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultisigsListResponse'
+
+  /multisigs/{id}:
+    get:
+      tags: [Multisigs]
+      summary: Get multisig details
+      operationId: getMultisig
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Multisig details with balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultisigWithBalanceResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /multisigs/{id}/utxos:
+    get:
+      tags: [Multisigs]
+      summary: Get spendable UTXOs
+      operationId: getMultisigUtxos
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of UTXOs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UtxosResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /proposals:
+    post:
+      tags: [Proposals]
+      summary: Create a spending proposal
+      operationId: createProposal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposalCreateInput'
+            example:
+              multisigId: "550e8400-e29b-41d4-a716-446655440000"
+              description: "Pay contractor invoice #1234"
+              outputs:
+                - address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
+                  amount: "100000"
+              createdBy: "agent-alice"
+      responses:
+        '201':
+          description: Proposal created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /proposals/{id}:
+    get:
+      tags: [Proposals]
+      summary: Get proposal status
+      operationId: getProposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Proposal details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /proposals/{id}/payload/{agentId}:
+    get:
+      tags: [Proposals]
+      summary: Get signing payload for agent
+      description: |
+        Returns the sighash(es) that the agent needs to sign.
+        The agent should sign each digest with Schnorr and submit via POST /proposals/{id}/sign.
+      operationId: getSigningPayload
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signing payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SigningPayloadResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /proposals/{id}/sign:
+    post:
+      tags: [Proposals]
+      summary: Submit signature
+      operationId: submitSignature
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignatureSubmission'
+            example:
+              agentId: "agent-alice"
+              signatures:
+                - inputIndex: 0
+                  signature: "abc123...64bytes"
+      responses:
+        '200':
+          description: Signature recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureSubmissionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /proposals/{id}/finalize:
+    post:
+      tags: [Proposals]
+      summary: Finalize transaction
+      description: |
+        Once threshold signatures are collected, this assembles the final transaction.
+        Returns the raw transaction hex ready for broadcast.
+      operationId: finalizeProposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Transaction finalized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinalizeResponse'
+        '400':
+          description: Threshold not met
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /proposals/{id}/broadcast:
+    post:
+      tags: [Proposals]
+      summary: Broadcast transaction
+      description: Submit the finalized transaction to the Bitcoin network.
+      operationId: broadcastProposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Transaction broadcast
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BroadcastResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /agents:
+    post:
+      tags: [Agents]
+      summary: Register an agent
+      operationId: registerAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentInput'
+      responses:
+        '201':
+          description: Agent registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+
+  /webhooks:
+    post:
+      tags: [Webhooks]
+      summary: Register webhook
+      operationId: registerWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookInput'
+      responses:
+        '201':
+          description: Webhook registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookResponse'
+
+components:
+  schemas:
+    # ─────────────────────────────────────────────────────────────────
+    # Core Types
+    # ─────────────────────────────────────────────────────────────────
+    
+    ChainId:
+      type: string
+      enum:
+        - bitcoin-mainnet
+        - bitcoin-testnet
+        - bitcoin-signet
+      description: Bitcoin network identifier
+
+    WalletProvider:
+      type: string
+      enum:
+        - aibtc
+        - agentkit
+        - crossmint
+        - clawcash
+        - custom
+      description: Wallet provider for the agent
+
+    # ─────────────────────────────────────────────────────────────────
+    # Agents
+    # ─────────────────────────────────────────────────────────────────
+
+    AgentInput:
+      type: object
+      required:
+        - id
+        - name
+        - publicKey
+        - provider
+      properties:
+        id:
+          type: string
+          description: Unique agent identifier
+          maxLength: 64
+        name:
+          type: string
+          description: Human-readable name
+          maxLength: 256
+        publicKey:
+          type: string
+          description: 33-byte compressed or 32-byte x-only public key (hex)
+          minLength: 64
+          maxLength: 66
+        provider:
+          $ref: '#/components/schemas/WalletProvider'
+        webhookUrl:
+          type: string
+          format: uri
+          description: URL to notify when signature is requested
+
+    Agent:
+      allOf:
+        - $ref: '#/components/schemas/AgentInput'
+        - type: object
+          properties:
+            xOnlyPubkey:
+              type: string
+              description: 32-byte x-only pubkey (derived from publicKey)
+            createdAt:
+              type: string
+              format: date-time
+
+    AgentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Agent'
+
+    # ─────────────────────────────────────────────────────────────────
+    # Multisigs
+    # ─────────────────────────────────────────────────────────────────
+
+    MultisigCreateInput:
+      type: object
+      required:
+        - name
+        - chainId
+        - agents
+        - threshold
+      properties:
+        name:
+          type: string
+          description: Human-readable name for the multisig
+          maxLength: 256
+        chainId:
+          $ref: '#/components/schemas/ChainId'
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentInput'
+          minItems: 2
+          maxItems: 20
+        threshold:
+          type: integer
+          minimum: 2
+          maximum: 20
+          description: Number of signatures required to spend
+
+    Multisig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        chainId:
+          $ref: '#/components/schemas/ChainId'
+        address:
+          type: string
+          description: Taproot address (bc1p... or tb1p...)
+        threshold:
+          type: integer
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agent'
+        bitcoin:
+          type: object
+          description: Taproot-specific data
+          properties:
+            internalPubkey:
+              type: string
+            merkleRoot:
+              type: string
+            tweakedPubkey:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    MultisigResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Multisig'
+
+    MultisigsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Multisig'
+
+    MultisigWithBalanceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          allOf:
+            - $ref: '#/components/schemas/Multisig'
+            - type: object
+              properties:
+                balance:
+                  type: object
+                  properties:
+                    confirmed:
+                      type: string
+                      description: Confirmed balance in sats
+                    unconfirmed:
+                      type: string
+                      description: Unconfirmed balance in sats
+                    total:
+                      type: string
+                      description: Total balance in sats
+
+    # ─────────────────────────────────────────────────────────────────
+    # UTXOs
+    # ─────────────────────────────────────────────────────────────────
+
+    UTXO:
+      type: object
+      properties:
+        txid:
+          type: string
+          description: Transaction ID
+        vout:
+          type: integer
+          description: Output index
+        amount:
+          type: string
+          description: Amount in satoshis
+        scriptPubkey:
+          type: string
+          description: Output script (hex)
+
+    UtxosResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UTXO'
+
+    # ─────────────────────────────────────────────────────────────────
+    # Proposals
+    # ─────────────────────────────────────────────────────────────────
+
+    OutputSpec:
+      type: object
+      required:
+        - address
+        - amount
+      properties:
+        address:
+          type: string
+          description: Destination Bitcoin address
+        amount:
+          type: string
+          description: Amount in satoshis
+
+    ProposalCreateInput:
+      type: object
+      required:
+        - multisigId
+        - outputs
+        - createdBy
+      properties:
+        multisigId:
+          type: string
+          format: uuid
+        description:
+          type: string
+          maxLength: 1024
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutputSpec'
+          minItems: 1
+        feeRate:
+          type: number
+          description: Fee rate in sat/vB (auto-estimated if not provided)
+        createdBy:
+          type: string
+          description: Agent ID creating the proposal
+
+    ProposalStatus:
+      type: string
+      enum:
+        - pending
+        - signing
+        - ready
+        - broadcast
+        - confirmed
+        - expired
+        - cancelled
+
+    Proposal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        multisigId:
+          type: string
+          format: uuid
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/ProposalStatus'
+        outputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutputSpec'
+        feeRate:
+          type: number
+        totalFee:
+          type: string
+        signatures:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        signedBy:
+          type: array
+          items:
+            type: string
+        threshold:
+          type: integer
+        psbt:
+          type: string
+          description: Base64-encoded PSBT
+        txHex:
+          type: string
+          description: Final transaction hex (after finalization)
+        txid:
+          type: string
+          description: Transaction ID (after broadcast)
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+
+    ProposalResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Proposal'
+
+    # ─────────────────────────────────────────────────────────────────
+    # Signing
+    # ─────────────────────────────────────────────────────────────────
+
+    SigningDigest:
+      type: object
+      properties:
+        inputIndex:
+          type: integer
+          description: Input being signed
+        sighash:
+          type: string
+          description: 32-byte sighash to sign (hex)
+        sighashType:
+          type: integer
+          description: Sighash type (default 0 = SIGHASH_DEFAULT)
+        leafHash:
+          type: string
+          description: Leaf script hash (for script-path spending)
+
+    SigningPayloadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            proposalId:
+              type: string
+            agentId:
+              type: string
+            digests:
+              type: array
+              items:
+                $ref: '#/components/schemas/SigningDigest'
+            expiresAt:
+              type: string
+              format: date-time
+
+    SignatureSubmission:
+      type: object
+      required:
+        - agentId
+        - signatures
+      properties:
+        agentId:
+          type: string
+        signatures:
+          type: array
+          items:
+            type: object
+            required:
+              - inputIndex
+              - signature
+            properties:
+              inputIndex:
+                type: integer
+              signature:
+                type: string
+                description: 64-byte Schnorr signature (hex)
+
+    SignatureSubmissionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            recorded:
+              type: boolean
+            signaturesCollected:
+              type: integer
+            threshold:
+              type: integer
+            readyToFinalize:
+              type: boolean
+
+    FinalizeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            txHex:
+              type: string
+              description: Raw transaction hex
+            txid:
+              type: string
+              description: Transaction ID
+            size:
+              type: integer
+              description: Transaction size in vbytes
+            fee:
+              type: string
+              description: Total fee in sats
+
+    BroadcastResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            txid:
+              type: string
+            status:
+              type: string
+              enum: [broadcast, confirmed]
+
+    # ─────────────────────────────────────────────────────────────────
+    # Webhooks
+    # ─────────────────────────────────────────────────────────────────
+
+    WebhookInput:
+      type: object
+      required:
+        - url
+        - events
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+            enum:
+              - proposal.created
+              - proposal.signature_requested
+              - proposal.threshold_reached
+              - proposal.broadcast
+              - proposal.confirmed
+        secret:
+          type: string
+          description: HMAC secret for verifying webhook payloads
+
+    WebhookResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            url:
+              type: string
+            events:
+              type: array
+              items:
+                type: string
+
+    # ─────────────────────────────────────────────────────────────────
+    # Errors
+    # ─────────────────────────────────────────────────────────────────
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: Invalid input
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
