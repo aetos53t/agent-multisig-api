@@ -23,6 +23,48 @@ import type {
 import { TAPSCRIPT_LEAF_VERSION } from './taproot';
 
 // ═══════════════════════════════════════════════════════════════════
+//                       TAPTREE HELPERS
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Build a balanced Taptree from scripts (same structure as taproot.ts)
+ * Must match the tree structure used when generating the address!
+ */
+function buildTaptreeInternal(scripts: Uint8Array[]): btc.TaprootScriptTree {
+  if (scripts.length === 0) {
+    throw new Error('Cannot build tree with no scripts');
+  }
+  
+  if (scripts.length === 1) {
+    return { script: scripts[0], leafVersion: TAPSCRIPT_LEAF_VERSION };
+  }
+  
+  // Build balanced binary tree
+  const leaves: btc.TaprootScriptTree[] = scripts.map(script => ({
+    script,
+    leafVersion: TAPSCRIPT_LEAF_VERSION,
+  }));
+  
+  // Combine leaves pairwise until we have a single root
+  while (leaves.length > 1) {
+    const nextLevel: btc.TaprootScriptTree[] = [];
+    
+    for (let i = 0; i < leaves.length; i += 2) {
+      if (i + 1 < leaves.length) {
+        nextLevel.push([leaves[i], leaves[i + 1]]);
+      } else {
+        nextLevel.push(leaves[i]);
+      }
+    }
+    
+    leaves.length = 0;
+    leaves.push(...nextLevel);
+  }
+  
+  return leaves[0];
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //                          TYPES
 // ═══════════════════════════════════════════════════════════════════
 
@@ -199,15 +241,20 @@ export function createPSBT(input: CreatePSBTInput): PSBTResult {
   // Build transaction using @scure/btc-signer
   const tx = new btc.Transaction();
   
-  // Reconstruct the P2TR output to get proper tapLeafScript with control block
-  const leafScript = hex.decode(selectedLeaf.script);
+  // Rebuild the FULL Taptree (same structure as when address was created)
+  const allScripts = multisig.scriptTree.leaves.map(leaf => hex.decode(leaf.script));
+  const fullTaptree = buildTaptreeInternal(allScripts);
+  
+  // Create P2TR with full tree - this gives us the correct script/address
+  // and tapLeafScript with control blocks for ALL leaves
   const p2trOutput = btc.p2tr(
     hex.decode(multisig.internalPubkey),
-    { script: leafScript, leafVersion: TAPSCRIPT_LEAF_VERSION },
+    fullTaptree,
     network
   );
   
   // Add inputs with full taproot info
+  // btc-signer's tapLeafScript contains all leaves with their control blocks
   for (const utxo of inputs) {
     tx.addInput({
       txid: utxo.txid,
@@ -216,7 +263,6 @@ export function createPSBT(input: CreatePSBTInput): PSBTResult {
         script: p2trOutput.script,
         amount: utxo.amount,
       },
-      // Taproot script-path requires these fields
       tapInternalKey: p2trOutput.tapInternalKey,
       tapMerkleRoot: p2trOutput.tapMerkleRoot,
       tapLeafScript: p2trOutput.tapLeafScript,
