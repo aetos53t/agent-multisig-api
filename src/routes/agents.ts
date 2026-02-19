@@ -22,7 +22,7 @@ const router = new Hono();
 // ═══════════════════════════════════════════════════════════════════
 
 const RegisterAgentSchema = z.object({
-  id: z.string().min(1).max(64),
+  id: z.string().min(1).max(64).optional(), // Auto-generated if not provided
   name: z.string().min(1).max(256),
   publicKey: z.string().min(64).max(130),
   provider: z.enum(['aibtc', 'agentkit', 'crossmint', 'clawcash', 'bankr', 'custom']),
@@ -54,14 +54,17 @@ router.post('/', async (c) => {
   
   const input = parseResult.data;
   
+  // Generate ID if not provided
+  const agentId = input.id || `agent_${crypto.randomUUID().slice(0, 12)}`;
+  
   // Check if agent already exists
-  const existing = await repo.getAgent(input.id);
+  const existing = await repo.getAgent(agentId);
   if (existing) {
     return c.json<ApiResponse<never>>({
       success: false,
       error: {
         code: 'ALREADY_EXISTS',
-        message: `Agent ${input.id} already exists`,
+        message: `Agent ${agentId} already exists`,
       },
     }, 409);
   }
@@ -75,7 +78,7 @@ router.post('/', async (c) => {
   }
   
   const agent: Agent = {
-    id: input.id,
+    id: agentId,
     name: input.name,
     publicKey: input.publicKey,
     xOnlyPubkey,

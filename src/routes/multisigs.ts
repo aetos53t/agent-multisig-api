@@ -29,7 +29,7 @@ const router = new Hono();
 
 const AgentInputSchema = z.object({
   id: z.string().min(1).max(64),
-  name: z.string().min(1).max(256),
+  name: z.string().min(1).max(256).optional(), // Optional, derived from id if not provided
   publicKey: z.string().min(64).max(66),
   provider: z.enum(['aibtc', 'agentkit', 'crossmint', 'clawcash', 'bankr', 'custom']),
   webhookUrl: z.string().url().optional(),
