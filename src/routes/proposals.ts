@@ -23,6 +23,7 @@ import { createPSBT, addSignatureToPSBT, finalizePSBT, inspectPSBT } from '../se
 import { getConfirmedUtxos, getFeeRate, broadcastTransaction, p2trScriptPubkey } from '../services/bitcoin';
 import { compressedToXOnly } from '../services/taproot';
 import repo from '../db/repository';
+import webhooks from '../services/webhooks';
 
 const router = new Hono();
 
@@ -177,6 +178,11 @@ router.post('/', async (c) => {
     };
     
     await repo.createProposal(proposal);
+    
+    // Notify agents via webhooks (fire and forget)
+    webhooks.notifyProposalCreated(proposal, multisig).catch(err => {
+      console.error('Webhook delivery error:', err);
+    });
     
     return c.json<ApiResponse<Proposal & { sighashes: typeof psbtResult.sighashes }>>({
       success: true,
@@ -413,6 +419,11 @@ router.post('/:id/sign', async (c) => {
   const newSigCount = proposal.signatures.length + 1;
   if (newSigCount >= multisig.threshold) {
     await repo.updateProposalStatus(proposalId, 'ready', { signedTx });
+    
+    // Notify agents that threshold is reached
+    webhooks.notifyThresholdReached(proposal, multisig).catch(err => {
+      console.error('Webhook delivery error:', err);
+    });
   }
   
   return c.json<ApiResponse<any>>({
@@ -533,6 +544,11 @@ router.post('/:id/broadcast', async (c) => {
     const txid = await broadcastTransaction(proposal.finalTx, multisig.chainId);
     
     await repo.updateProposalStatus(proposalId, 'broadcast', { txid });
+    
+    // Notify agents of successful broadcast
+    webhooks.notifyBroadcast(proposal, multisig, txid).catch(err => {
+      console.error('Webhook delivery error:', err);
+    });
     
     return c.json<ApiResponse<any>>({
       success: true,
