@@ -249,6 +249,41 @@ export async function getMultisigsForAgent(agentId: string): Promise<Multisig[]>
   return multisigs.filter((m): m is Multisig => m !== null);
 }
 
+export async function getAgentsForMultisig(multisigId: string): Promise<Agent[]> {
+  if (!sql) {
+    const multisig = memMultisigs.get(multisigId);
+    if (!multisig) return [];
+    
+    const agents: Agent[] = [];
+    for (const a of multisig.agents) {
+      const agent = memAgents.get(a.id);
+      if (agent) agents.push(agent);
+    }
+    return agents;
+  }
+
+  const rows = await sql<any[]>`
+    SELECT a.id, a.name, a.public_key, a.x_only_pubkey, a.provider, 
+           a.webhook_url, a.metadata, a.created_at, a.updated_at
+    FROM agents a
+    JOIN multisig_agents ma ON a.id = ma.agent_id
+    WHERE ma.multisig_id = ${multisigId}
+    ORDER BY ma.position
+  `;
+
+  return rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    publicKey: r.public_key,
+    xOnlyPubkey: r.x_only_pubkey,
+    provider: r.provider,
+    webhookUrl: r.webhook_url,
+    metadata: r.metadata,
+    createdAt: new Date(r.created_at),
+    updatedAt: new Date(r.updated_at),
+  }));
+}
+
 // ═══════════════════════════════════════════════════════════════════
 //                          PROPOSALS
 // ═══════════════════════════════════════════════════════════════════
@@ -482,6 +517,7 @@ export default {
   getMultisig,
   listMultisigs,
   getMultisigsForAgent,
+  getAgentsForMultisig,
   createProposal,
   getProposal,
   updateProposalStatus,
