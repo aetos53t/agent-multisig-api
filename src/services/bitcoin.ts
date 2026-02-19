@@ -147,6 +147,26 @@ export async function getConfirmedUtxos(
 }
 
 /**
+ * Get all UTXOs including unconfirmed (mempool)
+ * Use with caution - unconfirmed UTXOs can be double-spent
+ */
+export async function getAllUtxos(
+  address: string,
+  chainId: ChainId
+): Promise<TxInput[]> {
+  const apiUrl = getApiUrl(chainId);
+  const utxos = await fetchJson<MempoolUTXO[]>(`${apiUrl}/address/${address}/utxo`);
+  
+  return utxos.map(utxo => ({
+    txid: utxo.txid,
+    vout: utxo.vout,
+    amount: BigInt(utxo.value),
+    scriptPubkey: '',
+    confirmed: utxo.status.confirmed,
+  }));
+}
+
+/**
  * Get address balance
  */
 export async function getBalance(
@@ -324,6 +344,7 @@ export async function getScriptPubkey(
 export default {
   getUtxos,
   getConfirmedUtxos,
+  getAllUtxos,
   getBalance,
   getFeeEstimates,
   getFeeRate,

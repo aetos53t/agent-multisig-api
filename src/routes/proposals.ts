@@ -20,7 +20,7 @@ import type {
   TxOutput,
 } from '../types';
 import { createPSBT, addSignatureToPSBT, finalizePSBT, inspectPSBT } from '../services/psbt';
-import { getConfirmedUtxos, getFeeRate, broadcastTransaction, p2trScriptPubkey } from '../services/bitcoin';
+import { getConfirmedUtxos, getAllUtxos, getFeeRate, broadcastTransaction, p2trScriptPubkey } from '../services/bitcoin';
 import { compressedToXOnly } from '../services/taproot';
 import repo from '../db/repository';
 import webhooks from '../services/webhooks';
@@ -45,6 +45,7 @@ const CreateProposalSchema = z.object({
   feeRate: z.number().int().min(1).max(10000).optional(),
   note: z.string().max(1000).optional(),
   expiresInSeconds: z.number().int().min(60).max(604800).optional(),
+  allowUnconfirmed: z.boolean().optional(), // Allow mempool UTXOs (risky!)
 });
 
 const SignProposalSchema = z.object({
@@ -104,14 +105,19 @@ router.post('/', async (c) => {
   }
   
   try {
-    // Get UTXOs
-    const utxos = await getConfirmedUtxos(multisig.address, multisig.chainId);
+    // Get UTXOs (optionally include unconfirmed)
+    const utxos = input.allowUnconfirmed
+      ? await getAllUtxos(multisig.address, multisig.chainId)
+      : await getConfirmedUtxos(multisig.address, multisig.chainId);
+    
     if (utxos.length === 0) {
       return c.json<ApiResponse<never>>({
         success: false,
         error: {
           code: 'NO_UTXOS',
-          message: 'No confirmed UTXOs available',
+          message: input.allowUnconfirmed 
+            ? 'No UTXOs available' 
+            : 'No confirmed UTXOs available (try allowUnconfirmed: true)',
         },
       }, 400);
     }
