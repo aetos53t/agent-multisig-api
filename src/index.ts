@@ -17,6 +17,9 @@ import proposalsRouter from './routes/proposals';
 import agentsRouter from './routes/agents';
 import webhooksRouter from './routes/webhooks';
 import healthRouter from './routes/health';
+import metricsRouter from './routes/metrics';
+import { createAuthMiddleware } from './middleware/auth';
+import { createRateLimitMiddleware } from './middleware/rateLimit';
 
 // ═══════════════════════════════════════════════════════════════════
 //                              APP
@@ -46,12 +49,28 @@ if (process.env.NODE_ENV !== 'production') {
   app.use('*', prettyJSON());
 }
 
+// API key authentication (optional - allows anonymous if no keys configured)
+app.use('*', createAuthMiddleware({
+  publicRoutes: ['/health', '/metrics', '/'],
+  allowAnonymousIfNoKeys: true,
+}));
+
+// Rate limiting (100 req/min per IP or API key)
+app.use('*', createRateLimitMiddleware({
+  max: 100,
+  windowMs: 60 * 1000,
+  skip: ['/health', '/metrics'],
+}));
+
 // ═══════════════════════════════════════════════════════════════════
 //                            ROUTES
 // ═══════════════════════════════════════════════════════════════════
 
 // Health check
 app.route('/health', healthRouter);
+
+// Metrics (Prometheus-compatible)
+app.route('/metrics', metricsRouter);
 
 // API v1
 const v1 = new Hono();
