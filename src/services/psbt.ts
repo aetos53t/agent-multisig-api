@@ -284,14 +284,24 @@ export function createPSBT(input: CreatePSBTInput): PSBTResult {
   const psbtBase64 = btoa(String.fromCharCode(...psbtBytes));
   const psbtHex = hex.encode(psbtBytes);
   
-  // Compute sighashes for each input
+  // Compute sighashes for each input using preimageWitnessV1 (Taproot)
+  const leafScript = hex.decode(selectedLeaf.script);
+  const prevOutScripts = inputs.map(() => p2trOutput.script);
+  const amounts = inputs.map(i => i.amount);
+  
   const sighashes = inputs.map((_, inputIndex) => {
-    // Get sighash for Taproot script-path
-    // BIP 341 sighash with SIGHASH_DEFAULT (0x00)
-    const sighash = tx.preimageHash(inputIndex, btc.SigHash.DEFAULT, true);
+    // BIP 341 sighash for script-path spending
+    const sighash = (tx as any).preimageWitnessV1(
+      inputIndex,
+      prevOutScripts,
+      btc.SigHash.DEFAULT,
+      amounts,
+      undefined,        // extFlag (undefined for script-path)
+      leafScript,       // script being executed
+      TAPSCRIPT_LEAF_VERSION
+    );
     
     // Compute leaf hash
-    const leafScript = hex.decode(selectedLeaf.script);
     const leafHash = computeLeafHash(leafScript);
     
     return {
