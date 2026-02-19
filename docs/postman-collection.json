@@ -1,0 +1,174 @@
+{
+  "info": {
+    "name": "Agent Multisig API",
+    "description": "Universal coordination layer for multi-agent wallets",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://agent-multisig-api-production.up.railway.app",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        },
+        {
+          "name": "API Info",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agents",
+      "item": [
+        {
+          "name": "Register Agent",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/agents",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Agent\",\n  \"publicKey\": \"79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798\",\n  \"provider\": \"aibtc\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Agent",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/agents/{{agentId}}"
+          }
+        },
+        {
+          "name": "List Agents",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/agents"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Multisigs",
+      "item": [
+        {
+          "name": "Create Multisig",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/multisigs",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test Treasury\",\n  \"chainId\": \"bitcoin-testnet\",\n  \"threshold\": 2,\n  \"agents\": [\n    {\n      \"id\": \"agent-1\",\n      \"publicKey\": \"79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798\",\n      \"provider\": \"aibtc\"\n    },\n    {\n      \"id\": \"agent-2\",\n      \"publicKey\": \"c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5\",\n      \"provider\": \"clawcash\"\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Multisig",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/multisigs/{{multisigId}}"
+          }
+        },
+        {
+          "name": "List Multisigs",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/multisigs"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Proposals",
+      "item": [
+        {
+          "name": "Create Proposal",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/proposals",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"multisigId\": \"{{multisigId}}\",\n  \"outputs\": [\n    {\n      \"address\": \"tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx\",\n      \"amount\": \"10000\"\n    }\n  ],\n  \"note\": \"Test payment\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Proposal",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/proposals/{{proposalId}}"
+          }
+        },
+        {
+          "name": "Get Signing Payload",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/proposals/{{proposalId}}/payload/{{agentId}}"
+          }
+        },
+        {
+          "name": "Submit Signature",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/proposals/{{proposalId}}/sign",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"agentId\": \"{{agentId}}\",\n  \"signature\": \"<64-byte-hex-signature>\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Finalize Proposal",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/proposals/{{proposalId}}/finalize"
+          }
+        },
+        {
+          "name": "Broadcast Proposal",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/proposals/{{proposalId}}/broadcast"
+          }
+        }
+      ]
+    }
+  ]
+}
