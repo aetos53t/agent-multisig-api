@@ -3,749 +3,423 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>agent-multisig-api</title>
-  <meta name="description" content="Coordination layer for multi-agent transactions. Any chain. Any wallet provider.">
+  <title>Agent Multisig API - Multi-Agent Wallet Coordination</title>
+  <meta name="description" content="Universal coordination layer for multi-agent Bitcoin transactions. Proven on mainnet.">
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   
   <style>
     :root {
-      --bg: #0d1117;
-      --bg-secondary: #161b22;
-      --bg-tertiary: #21262d;
-      --border: #30363d;
-      --text: #c9d1d9;
-      --text-muted: #8b949e;
-      --text-bright: #f0f6fc;
-      --green: #3fb950;
-      --green-dim: #238636;
-      --blue: #58a6ff;
-      --purple: #bc8cff;
-      --orange: #d29922;
-      --red: #f85149;
-      --cyan: #39c5cf;
+      --bg: #0a0a0a;
+      --bg-card: #111111;
+      --border: #222222;
+      --text: #e5e5e5;
+      --text-muted: #888888;
+      --accent: #00ff88;
+      --accent-dim: #00cc6a;
+      --blue: #0088ff;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'JetBrains Mono', monospace;
-      background: var(--bg);
+    body { 
+      font-family: 'Inter', -apple-system, sans-serif; 
+      background: var(--bg); 
       color: var(--text);
       line-height: 1.6;
-      font-size: 14px;
     }
-
-    ::selection { background: var(--green); color: var(--bg); }
-
-    .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
-
-    a { color: var(--blue); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-
-    /* Header */
-    header {
-      border-bottom: 1px solid var(--border);
-      padding: 16px 0;
-      position: sticky;
-      top: 0;
-      background: var(--bg);
-      z-index: 100;
-    }
-
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logo {
-      color: var(--text-bright);
-      font-weight: 600;
-      font-size: 15px;
-    }
-
-    .logo span { color: var(--green); }
-
-    .nav-links {
-      display: flex;
-      gap: 24px;
-      list-style: none;
-    }
-
-    .nav-links a { color: var(--text-muted); font-size: 13px; }
-    .nav-links a:hover { color: var(--text); text-decoration: none; }
-
+    
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+    
     /* Hero */
     .hero {
       padding: 80px 0 60px;
+      text-align: center;
       border-bottom: 1px solid var(--border);
     }
-
-    .hero-pre {
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      font-size: 13px;
-    }
-
+    
     .hero h1 {
-      font-size: 32px;
-      font-weight: 600;
-      color: var(--text-bright);
+      font-size: 48px;
+      font-weight: 700;
       margin-bottom: 16px;
-      line-height: 1.3;
+      background: linear-gradient(135deg, var(--accent), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-
-    .hero h1 .accent { color: var(--green); }
-
-    .hero-desc {
+    
+    .hero .tagline {
+      font-size: 20px;
       color: var(--text-muted);
-      font-size: 15px;
-      max-width: 600px;
       margin-bottom: 32px;
     }
-
-    .hero-links {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      border: 1px solid var(--border);
-      background: var(--bg-secondary);
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn:hover { 
-      border-color: var(--text-muted); 
-      text-decoration: none;
-      background: var(--bg-tertiary);
-    }
-
-    .btn-primary {
-      background: var(--green-dim);
-      border-color: var(--green-dim);
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background: var(--green);
-      border-color: var(--green);
-    }
-
-    /* Terminal Block */
-    .terminal {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
+    
+    .proof-banner {
+      display: inline-block;
+      background: var(--bg-card);
+      border: 1px solid var(--accent);
       border-radius: 8px;
-      margin: 40px 0;
-      overflow: hidden;
+      padding: 16px 24px;
+      margin-bottom: 32px;
     }
-
-    .terminal-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      background: var(--bg-tertiary);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .terminal-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-
-    .terminal-dot.red { background: #ff5f57; }
-    .terminal-dot.yellow { background: #febc2e; }
-    .terminal-dot.green { background: #28c840; }
-
-    .terminal-title {
-      margin-left: auto;
+    
+    .proof-banner .label {
       font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .terminal-body {
-      padding: 20px;
-      overflow-x: auto;
-    }
-
-    .terminal-body pre {
-      font-size: 13px;
-      line-height: 1.7;
-    }
-
-    .prompt { color: var(--green); }
-    .cmd { color: var(--text-bright); }
-    .comment { color: var(--text-muted); }
-    .output { color: var(--text); }
-    .string { color: var(--cyan); }
-    .keyword { color: var(--purple); }
-    .function { color: var(--blue); }
-    .property { color: var(--orange); }
-
-    /* Section */
-    section { padding: 60px 0; border-bottom: 1px solid var(--border); }
-    section:last-of-type { border-bottom: none; }
-
-    .section-label {
-      font-size: 11px;
+      color: var(--accent);
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: var(--text-muted);
       margin-bottom: 8px;
     }
-
-    h2 {
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--text-bright);
-      margin-bottom: 24px;
+    
+    .proof-banner a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--text);
     }
-
-    h2 .dim { color: var(--text-muted); font-weight: 400; }
-
-    /* Flow */
-    .flow {
-      display: grid;
-      gap: 1px;
-      background: var(--border);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .flow-step {
-      display: grid;
-      grid-template-columns: 48px 1fr;
-      background: var(--bg-secondary);
-    }
-
-    .flow-num {
+    
+    .cta-buttons {
       display: flex;
-      align-items: center;
+      gap: 16px;
       justify-content: center;
-      background: var(--bg-tertiary);
-      color: var(--green);
-      font-weight: 600;
-      font-size: 13px;
-      border-right: 1px solid var(--border);
     }
-
-    .flow-content {
-      padding: 16px 20px;
-    }
-
-    .flow-content h3 {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-bright);
-      margin-bottom: 4px;
-    }
-
-    .flow-content p {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    /* Providers */
-    .providers-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
-    }
-
-    .provider {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 16px;
-    }
-
-    .provider-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .provider-icon {
-      width: 28px;
-      height: 28px;
-      background: var(--bg-tertiary);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-    }
-
-    .provider-name {
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--text-bright);
-    }
-
-    .provider-desc {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-
-    .status {
+    
+    .btn {
       display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 500;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
     }
-
-    .status-ready { background: rgba(63, 185, 80, 0.15); color: var(--green); }
-    .status-soon { background: rgba(210, 153, 34, 0.15); color: var(--orange); }
-
-    /* Chains */
-    .chains {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-top: 20px;
+    
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
     }
-
-    .chain {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--text-muted);
-      font-size: 13px;
+    
+    .btn-primary:hover {
+      background: var(--accent-dim);
+      text-decoration: none;
     }
-
-    .chain-icon {
-      width: 24px;
-      height: 24px;
-      background: var(--bg-secondary);
+    
+    .btn-secondary {
+      background: transparent;
       border: 1px solid var(--border);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
+      color: var(--text);
     }
-
-    /* API Table */
-    .api-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
+    
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+      text-decoration: none;
     }
-
-    .api-table th,
-    .api-table td {
-      text-align: left;
-      padding: 12px;
+    
+    /* Features */
+    .features {
+      padding: 80px 0;
       border-bottom: 1px solid var(--border);
     }
-
-    .api-table th {
-      color: var(--text-muted);
-      font-weight: 500;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    
+    .features h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 48px;
     }
-
-    .api-table tr:last-child td { border-bottom: none; }
-
-    .method {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
     }
-
-    .method-post { background: rgba(63, 185, 80, 0.15); color: var(--green); }
-    .method-get { background: rgba(88, 166, 255, 0.15); color: var(--blue); }
-
-    .endpoint { color: var(--text-bright); }
-
-    /* ASCII Art */
-    .ascii {
-      font-size: 11px;
-      line-height: 1.4;
+    
+    .feature {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    
+    .feature h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    
+    .feature p {
       color: var(--text-muted);
-      white-space: pre;
+      font-size: 14px;
+    }
+    
+    /* Code */
+    .code-section {
+      padding: 80px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .code-section h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 48px;
+    }
+    
+    .code-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .code-tab {
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    
+    .code-tab.active {
+      background: #1a1a1a;
+      border-bottom-color: #1a1a1a;
+      color: var(--accent);
+    }
+    
+    .code-block {
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      border-radius: 0 8px 8px 8px;
+      padding: 24px;
       overflow-x: auto;
-      padding: 20px;
-      background: var(--bg-secondary);
+    }
+    
+    .code-block pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    
+    .code-block .comment { color: #6a737d; }
+    .code-block .keyword { color: #ff7b72; }
+    .code-block .string { color: #a5d6ff; }
+    .code-block .function { color: #d2a8ff; }
+    .code-block .number { color: #79c0ff; }
+    
+    /* Stats */
+    .stats {
+      padding: 60px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    
+    /* SDKs */
+    .sdks {
+      padding: 80px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .sdks h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 48px;
+    }
+    
+    .sdk-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    
+    .sdk {
+      background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 8px;
-      margin: 24px 0;
+      padding: 20px;
+      text-align: center;
     }
-
-    .ascii .highlight { color: var(--green); }
-    .ascii .dim { color: var(--text-muted); opacity: 0.6; }
-
+    
+    .sdk-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .sdk-install {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    
     /* Footer */
     footer {
       padding: 40px 0;
       text-align: center;
-    }
-
-    .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 24px;
-      margin-bottom: 16px;
-    }
-
-    .footer-links a { color: var(--text-muted); font-size: 13px; }
-    .footer-links a:hover { color: var(--text); }
-
-    .footer-credit {
       color: var(--text-muted);
-      font-size: 12px;
+      font-size: 14px;
     }
-
-    .footer-credit a { color: var(--green); }
-
-    /* Mobile */
-    @media (max-width: 640px) {
-      .nav-links { display: none; }
-      .hero h1 { font-size: 24px; }
-      .ascii { font-size: 9px; }
-      .providers-grid { grid-template-columns: 1fr; }
+    
+    footer a {
+      color: var(--text);
+    }
+    
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 32px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .sdk-grid { grid-template-columns: repeat(2, 1fr); }
+      .cta-buttons { flex-direction: column; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <nav class="container">
-      <a href="/" class="logo"><span>$</span> agent-multisig-api</a>
-      <ul class="nav-links">
-        <li><a href="/docs/">docs</a></li>
-        <li><a href="/docs/openapi.yaml">openapi</a></li>
-        <li><a href="https://github.com/houseof-set/agent-multisig-api">github</a></li>
-      </ul>
-    </nav>
-  </header>
-
-  <main>
-    <section class="hero">
-      <div class="container">
-        <p class="hero-pre">// coordination layer for AI agents</p>
-        <h1>Multi-agent transactions.<br><span class="accent">Any chain. Any wallet.</span></h1>
-        <p class="hero-desc">
-          Your agents already have wallets. We coordinate when they need to sign together—
-          PSBT for Bitcoin, structured data for EVM, whatever the chain speaks.
-        </p>
-        <div class="hero-links">
-          <a href="/docs/QUICKSTART" class="btn btn-primary">→ quickstart</a>
-          <a href="/docs/openapi.yaml" class="btn">openapi.yaml</a>
-          <a href="https://github.com/houseof-set/agent-multisig-api" class="btn">source</a>
-        </div>
-
-        <div class="chains">
-          <div class="chain"><div class="chain-icon">₿</div> Bitcoin</div>
-          <div class="chain"><div class="chain-icon">◎</div> Stacks</div>
-          <div class="chain"><div class="chain-icon">⟠</div> EVM</div>
-          <div class="chain"><div class="chain-icon">◇</div> Solana</div>
-          <div class="chain"><div class="chain-icon">+</div> extensible</div>
-        </div>
+  <section class="hero">
+    <div class="container">
+      <h1>Agent Multisig API</h1>
+      <p class="tagline">Multi-agent wallet coordination for Bitcoin, EVM, and beyond.</p>
+      
+      <div class="proof-banner">
+        <div class="label">✓ Proven on Mainnet - Block 937432</div>
+        <a href="https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4" target="_blank">
+          8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4
+        </a>
       </div>
-    </section>
-
-    <section>
-      <div class="container">
-        <div class="terminal">
-          <div class="terminal-header">
-            <span class="terminal-dot red"></span>
-            <span class="terminal-dot yellow"></span>
-            <span class="terminal-dot green"></span>
-            <span class="terminal-title">quickstart</span>
-          </div>
-          <div class="terminal-body">
-<pre><span class="comment"># Register agents with their public keys</span>
-<span class="prompt">$</span> <span class="cmd">curl -X POST /agents \</span>
-    <span class="cmd">-d '{"pubkey": "02abc...", "webhook": "https://..."}'</span>
-
-<span class="comment"># Create a 2-of-3 multisig vault</span>
-<span class="prompt">$</span> <span class="cmd">curl -X POST /multisigs \</span>
-    <span class="cmd">-d '{"agents": ["agent1", "agent2", "agent3"], "threshold": 2}'</span>
-
-<span class="output">{
-  "multisigId": "msig_abc123",
-  "addresses": {
-    "bitcoin": "bc1p...",
-    "stacks": "SP...",
-    "evm": "0x..."
-  }
-}</span>
-
-<span class="comment"># Propose a transaction (agents get webhook)</span>
-<span class="prompt">$</span> <span class="cmd">curl -X POST /proposals \</span>
-    <span class="cmd">-d '{"multisigId": "msig_abc123", "chain": "bitcoin", ...}'</span>
-
-<span class="comment"># Each agent signs and submits</span>
-<span class="prompt">$</span> <span class="cmd">curl -X POST /proposals/{id}/signatures \</span>
-    <span class="cmd">-d '{"agentId": "agent1", "signature": "..."}'</span>
-
-<span class="comment"># Threshold met → auto-broadcast</span></pre>
-          </div>
-        </div>
+      
+      <div class="cta-buttons">
+        <a href="https://github.com/aetos53t/agent-multisig-api" class="btn btn-primary">View on GitHub</a>
+        <a href="https://agent-multisig-api-production.up.railway.app/health" class="btn btn-secondary">API Status</a>
       </div>
-    </section>
-
-    <section>
-      <div class="container">
-        <p class="section-label">// architecture</p>
-        <h2>We don't hold keys. <span class="dim">We coordinate signing.</span></h2>
-
-        <div class="ascii"><span class="dim">┌─────────────────────────────────────────────────────────────────────────┐
-│</span>                                                                         <span class="dim">│</span>
-<span class="dim">│</span>    <span class="highlight">┌──────────┐</span>   <span class="highlight">┌──────────┐</span>   <span class="highlight">┌──────────┐</span>   <span class="highlight">┌──────────┐</span>          <span class="dim">│</span>
-<span class="dim">│</span>    <span class="highlight">│ Agent 1  │</span>   <span class="highlight">│ Agent 2  │</span>   <span class="highlight">│ Agent 3  │</span>   <span class="highlight">│ Agent N  │</span>          <span class="dim">│</span>
-<span class="dim">│</span>    <span class="highlight">│  aibtc   │</span>   <span class="highlight">│  Bankr   │</span>   <span class="highlight">│ ClawCash │</span>   <span class="highlight">│  Custom  │</span>          <span class="dim">│</span>
-<span class="dim">│</span>    <span class="highlight">└────┬─────┘</span>   <span class="highlight">└────┬─────┘</span>   <span class="highlight">└────┬─────┘</span>   <span class="highlight">└────┬─────┘</span>          <span class="dim">│</span>
-<span class="dim">│</span>         │             │             │             │                    <span class="dim">│</span>
-<span class="dim">│</span>         └─────────────┴──────┬──────┴─────────────┘                    <span class="dim">│</span>
-<span class="dim">│</span>                               │                                         <span class="dim">│</span>
-<span class="dim">│</span>                               ▼                                         <span class="dim">│</span>
-<span class="dim">│</span>                  ╔═══════════════════════════╗                         <span class="dim">│</span>
-<span class="dim">│</span>                  ║   <span class="highlight">COORDINATION API</span>        ║                         <span class="dim">│</span>
-<span class="dim">│</span>                  ║   proposals / signatures  ║                         <span class="dim">│</span>
-<span class="dim">│</span>                  ║   webhooks / policies     ║                         <span class="dim">│</span>
-<span class="dim">│</span>                  ╚════════════╦══════════════╝                         <span class="dim">│</span>
-<span class="dim">│</span>                               │                                         <span class="dim">│</span>
-<span class="dim">│</span>         ┌─────────────┬──────┴──────┬─────────────┐                    <span class="dim">│</span>
-<span class="dim">│</span>         │             │             │             │                    <span class="dim">│</span>
-<span class="dim">│</span>         ▼             ▼             ▼             ▼                    <span class="dim">│</span>
-<span class="dim">│</span>    ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐                  <span class="dim">│</span>
-<span class="dim">│</span>    │ Bitcoin │  │ Stacks  │  │   EVM   │  │ Solana  │                  <span class="dim">│</span>
-<span class="dim">│</span>    │ Taproot │  │ SIP-018 │  │  Safe   │  │ Squads  │                  <span class="dim">│</span>
-<span class="dim">│</span>    └─────────┘  └─────────┘  └─────────┘  └─────────┘                  <span class="dim">│</span>
-<span class="dim">│</span>                                                                         <span class="dim">│</span>
-<span class="dim">└─────────────────────────────────────────────────────────────────────────┘</span></div>
-      </div>
-    </section>
-
-    <section>
-      <div class="container">
-        <p class="section-label">// flow</p>
-        <h2>How it works</h2>
-
-        <div class="flow">
-          <div class="flow-step">
-            <div class="flow-num">01</div>
-            <div class="flow-content">
-              <h3>Register agents</h3>
-              <p>Each agent registers pubkey + webhook. Private keys never leave their wallet.</p>
-            </div>
-          </div>
-          <div class="flow-step">
-            <div class="flow-num">02</div>
-            <div class="flow-content">
-              <h3>Create vault</h3>
-              <p>Combine agents into m-of-n vault. We derive shared addresses per chain.</p>
-            </div>
-          </div>
-          <div class="flow-step">
-            <div class="flow-num">03</div>
-            <div class="flow-content">
-              <h3>Propose spend</h3>
-              <p>Any agent proposes. We build the signing payload and notify others via webhook.</p>
-            </div>
-          </div>
-          <div class="flow-step">
-            <div class="flow-num">04</div>
-            <div class="flow-content">
-              <h3>Collect signatures</h3>
-              <p>Agents sign asynchronously with their own wallets. Any provider works.</p>
-            </div>
-          </div>
-          <div class="flow-step">
-            <div class="flow-num">05</div>
-            <div class="flow-content">
-              <h3>Execute</h3>
-              <p>Threshold met → finalize transaction → broadcast to network.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="container">
-        <p class="section-label">// adapters</p>
-        <h2>Wallet providers</h2>
-
-        <div class="providers-grid">
-          <div class="provider">
-            <div class="provider-header">
-              <div class="provider-icon">⚡</div>
-              <div class="provider-name">aibtc</div>
-            </div>
-            <p class="provider-desc">Stacks + Bitcoin native MCP server</p>
-            <span class="status status-ready">ready</span>
-          </div>
-          <div class="provider">
-            <div class="provider-header">
-              <div class="provider-icon">🦞</div>
-              <div class="provider-name">Claw Cash</div>
-            </div>
-            <p class="provider-desc">Enclave-secured remote signing</p>
-            <span class="status status-ready">ready</span>
-          </div>
-          <div class="provider">
-            <div class="provider-header">
-              <div class="provider-icon">🏦</div>
-              <div class="provider-name">Bankr</div>
-            </div>
-            <p class="provider-desc">Agent-first EVM wallets</p>
-            <span class="status status-ready">ready</span>
-          </div>
-          <div class="provider">
-            <div class="provider-header">
-              <div class="provider-icon">🔵</div>
-              <div class="provider-name">AgentKit</div>
-            </div>
-            <p class="provider-desc">Coinbase CDP for EVM + Solana</p>
-            <span class="status status-soon">coming</span>
-          </div>
-          <div class="provider">
-            <div class="provider-header">
-              <div class="provider-icon">✨</div>
-              <div class="provider-name">Crossmint</div>
-            </div>
-            <p class="provider-desc">Custodial multi-chain wallets</p>
-            <span class="status status-soon">coming</span>
-          </div>
-          <div class="provider">
-            <div class="provider-header">
-              <div class="provider-icon">⌨</div>
-              <div class="provider-name">Custom</div>
-            </div>
-            <p class="provider-desc">Any signer that can sign a digest</p>
-            <span class="status status-ready">ready</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="container">
-        <p class="section-label">// endpoints</p>
-        <h2>API overview</h2>
-
-        <table class="api-table">
-          <thead>
-            <tr>
-              <th>Method</th>
-              <th>Endpoint</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="method method-post">POST</span></td>
-              <td class="endpoint">/agents</td>
-              <td>Register agent with pubkey + webhook</td>
-            </tr>
-            <tr>
-              <td><span class="method method-get">GET</span></td>
-              <td class="endpoint">/agents/{id}</td>
-              <td>Get agent details</td>
-            </tr>
-            <tr>
-              <td><span class="method method-post">POST</span></td>
-              <td class="endpoint">/multisigs</td>
-              <td>Create m-of-n vault from agents</td>
-            </tr>
-            <tr>
-              <td><span class="method method-get">GET</span></td>
-              <td class="endpoint">/multisigs/{id}</td>
-              <td>Get vault with derived addresses</td>
-            </tr>
-            <tr>
-              <td><span class="method method-post">POST</span></td>
-              <td class="endpoint">/proposals</td>
-              <td>Create spending proposal</td>
-            </tr>
-            <tr>
-              <td><span class="method method-post">POST</span></td>
-              <td class="endpoint">/proposals/{id}/signatures</td>
-              <td>Submit signature from agent</td>
-            </tr>
-            <tr>
-              <td><span class="method method-get">GET</span></td>
-              <td class="endpoint">/proposals/{id}</td>
-              <td>Get proposal status + signatures</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div style="margin-top: 24px;">
-          <a href="/docs/openapi.yaml" class="btn">→ Full OpenAPI spec</a>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="container">
-        <div class="terminal">
-          <div class="terminal-header">
-            <span class="terminal-dot red"></span>
-            <span class="terminal-dot yellow"></span>
-            <span class="terminal-dot green"></span>
-            <span class="terminal-title">webhook-handler.ts</span>
-          </div>
-          <div class="terminal-body">
-<pre><span class="comment">// Your agent receives a webhook when signature is needed</span>
-<span class="keyword">export async function</span> <span class="function">handleWebhook</span>(req: Request) {
-  <span class="keyword">const</span> { proposalId, chain, digest } = <span class="keyword">await</span> req.json();
+    </div>
+  </section>
   
-  <span class="comment">// Sign with your wallet (any provider)</span>
-  <span class="keyword">const</span> signature = <span class="keyword">await</span> myWallet.<span class="function">signDigest</span>(digest);
-  
-  <span class="comment">// Submit back to coordination API</span>
-  <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">`/proposals/${proposalId}/signatures`</span>, {
-    <span class="property">method</span>: <span class="string">'POST'</span>,
-    <span class="property">body</span>: JSON.<span class="function">stringify</span>({
-      <span class="property">agentId</span>: MY_AGENT_ID,
-      <span class="property">signature</span>
-    })
-  });
-  
-  <span class="comment">// That's it. Works for BTC, STX, ETH...</span>
-}</pre>
-          </div>
+  <section class="features">
+    <div class="container">
+      <h2>Why Agent Multisig?</h2>
+      <div class="feature-grid">
+        <div class="feature">
+          <h3>🔐 Never Holds Keys</h3>
+          <p>Private keys stay with agents. We coordinate signatures, never custody funds.</p>
+        </div>
+        <div class="feature">
+          <h3>⚡ Any Provider</h3>
+          <p>Works with aibtc, Claw Cash, Bankr, or any wallet that can sign digests.</p>
+        </div>
+        <div class="feature">
+          <h3>🌐 Multi-Chain</h3>
+          <p>Bitcoin Taproot, EVM Safe, Stacks, Solana. Same API, different chains.</p>
+        </div>
+        <div class="feature">
+          <h3>🤖 Agent-First</h3>
+          <p>Built for AI agents. MCP server, webhooks, async coordination.</p>
+        </div>
+        <div class="feature">
+          <h3>📊 PSBT Native</h3>
+          <p>Full PSBT support. Agents see exactly what they're signing.</p>
+        </div>
+        <div class="feature">
+          <h3>🔄 M-of-N</h3>
+          <p>Any threshold configuration. 2-of-3, 3-of-5, 5-of-7. You decide.</p>
         </div>
       </div>
-    </section>
-  </main>
+    </div>
+  </section>
+  
+  <section class="code-section">
+    <div class="container">
+      <h2>Quick Start</h2>
+      <div class="code-tabs">
+        <div class="code-tab active">TypeScript</div>
+        <div class="code-tab">Python</div>
+        <div class="code-tab">Go</div>
+        <div class="code-tab">cURL</div>
+      </div>
+      <div class="code-block">
+<pre><span class="keyword">import</span> { <span class="function">AgentMultisig</span> } <span class="keyword">from</span> <span class="string">'@agent-multisig/sdk'</span>;
 
+<span class="keyword">const</span> client = <span class="keyword">new</span> <span class="function">AgentMultisig</span>({
+  apiUrl: <span class="string">'https://agent-multisig-api-production.up.railway.app'</span>
+});
+
+<span class="comment">// Create 2-of-3 multisig in one call</span>
+<span class="keyword">const</span> { multisig, agents } = <span class="keyword">await</span> client.<span class="function">quickSetup</span>({
+  name: <span class="string">'AI Treasury'</span>,
+  threshold: <span class="number">2</span>,
+  signers: [
+    { name: <span class="string">'Bot1'</span>, provider: <span class="string">'aibtc'</span>, publicKey: <span class="string">'...'</span> },
+    { name: <span class="string">'Bot2'</span>, provider: <span class="string">'aibtc'</span>, publicKey: <span class="string">'...'</span> },
+    { name: <span class="string">'Bot3'</span>, provider: <span class="string">'aibtc'</span>, publicKey: <span class="string">'...'</span> },
+  ]
+});
+
+console.<span class="function">log</span>(<span class="string">'Fund this address:'</span>, multisig.address);</pre>
+      </div>
+    </div>
+  </section>
+  
+  <section class="stats">
+    <div class="container">
+      <div class="stats-grid">
+        <div>
+          <div class="stat-value">72</div>
+          <div class="stat-label">Tests Passing</div>
+        </div>
+        <div>
+          <div class="stat-value">20k+</div>
+          <div class="stat-label">Lines of Code</div>
+        </div>
+        <div>
+          <div class="stat-value">4</div>
+          <div class="stat-label">SDKs</div>
+        </div>
+        <div>
+          <div class="stat-value">∞</div>
+          <div class="stat-label">Chains Supported</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <section class="sdks">
+    <div class="container">
+      <h2>SDKs & Tools</h2>
+      <div class="sdk-grid">
+        <div class="sdk">
+          <div class="sdk-name">TypeScript</div>
+          <div class="sdk-install">npm i @agent-multisig/sdk</div>
+        </div>
+        <div class="sdk">
+          <div class="sdk-name">Python</div>
+          <div class="sdk-install">pip install agent-multisig</div>
+        </div>
+        <div class="sdk">
+          <div class="sdk-name">Go</div>
+          <div class="sdk-install">go get github.com/.../sdk/go</div>
+        </div>
+        <div class="sdk">
+          <div class="sdk-name">CLI</div>
+          <div class="sdk-install">npx @agent-multisig/cli</div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
   <footer>
     <div class="container">
-      <div class="footer-links">
-        <a href="/docs/">documentation</a>
-        <a href="/docs/openapi.yaml">openapi</a>
-        <a href="https://github.com/houseof-set/agent-multisig-api">github</a>
-      </div>
-      <p class="footer-credit">
-        built by <a href="https://x.com/setzeus">The House of Set</a> 🏛️
+      <p>
+        Built by <a href="https://github.com/houseof-set">The House of Set</a> · 
+        <a href="https://github.com/aetos53t/agent-multisig-api">GitHub</a> · 
+        <a href="/docs">Docs</a>
       </p>
     </div>
   </footer>
