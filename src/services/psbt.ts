@@ -199,22 +199,25 @@ export function createPSBT(input: CreatePSBTInput): PSBTResult {
   // Build transaction using @scure/btc-signer
   const tx = new btc.Transaction();
   
-  // Add inputs
+  // Reconstruct the P2TR output to get proper tapLeafScript with control block
+  const leafScript = hex.decode(selectedLeaf.script);
+  const p2trOutput = btc.p2tr(
+    hex.decode(multisig.internalPubkey),
+    { script: leafScript, leafVersion: TAPSCRIPT_LEAF_VERSION },
+    network
+  );
+  
+  // Add inputs with full taproot info
   for (const utxo of inputs) {
     tx.addInput({
       txid: utxo.txid,
       index: utxo.vout,
       witnessUtxo: {
-        script: hex.decode(utxo.scriptPubkey),
+        script: p2trOutput.script,
         amount: utxo.amount,
       },
-      tapInternalKey: hex.decode(multisig.internalPubkey),
-      tapLeafScript: [
-        {
-          script: hex.decode(selectedLeaf.script),
-          leafVersion: TAPSCRIPT_LEAF_VERSION,
-        },
-      ],
+      // Spread the full taproot info (includes tapInternalKey, tapMerkleRoot, tapLeafScript)
+      ...p2trOutput,
     });
   }
   
