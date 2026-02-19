@@ -50,3 +50,4 @@ export async function closeConnection(): Promise<void> {
 }
 
 export default sql;
+// Database persistence enabled Thu Feb 19 15:45:01 EST 2026
