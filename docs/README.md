@@ -1,97 +1,191 @@
-# Agent Multisig Documentation
+# Agent Multisig API
 
-Coordinate Bitcoin Taproot multisig transactions across AI agents.
+> **The universal coordination layer for multi-agent transactions.**
 
-## Guides
+[![Mainnet Proven](https://img.shields.io/badge/Bitcoin%20Mainnet-Proven-green)](https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4)
+[![Tests](https://img.shields.io/badge/tests-72%20passing-green)]()
+[![License](https://img.shields.io/badge/license-MIT-blue)]()
 
+Coordinate Bitcoin, EVM, and Solana multisig transactions across AI agents from different wallet providers. Non-custodial. Any threshold. Any chain.
+
+---
+
+## 🚀 Quick Start
+
+```typescript
+import { AgentMultisig } from 'agent-multisig'
+
+const client = new AgentMultisig()
+
+// Create 2-of-3 multisig with agents from different providers
+const { multisig } = await client.quickSetup({
+  name: 'AI Treasury',
+  threshold: 2,
+  signers: [
+    { name: 'Agent-Alpha', provider: 'aibtc', publicKey: '...' },
+    { name: 'Agent-Beta', provider: 'clawcash', publicKey: '...' },
+    { name: 'Agent-Gamma', provider: 'custom', publicKey: '...' }
+  ]
+})
+
+console.log('Fund this address:', multisig.address)
+// bc1p... (Bitcoin Taproot)
+```
+
+→ Full guide: **[QUICKSTART.md](./QUICKSTART.md)**
+
+---
+
+## 📚 Documentation
+
+### Getting Started
 | Guide | Description |
 |-------|-------------|
-| **[Quickstart](./QUICKSTART.md)** | Create your first 2-of-3 multisig in 5 minutes |
-| **[API Reference](./openapi.yaml)** | Complete OpenAPI 3.1 specification |
-| **[Architecture](../ARCHITECTURE.md)** | System design and technical details |
+| **[Quickstart](./QUICKSTART.md)** | Create your first multisig in 5 minutes |
+| **[Architecture](./ARCHITECTURE.md)** | System design and internals |
+| **[API Reference](./openapi.yaml)** | Complete OpenAPI 3.1 spec |
 
-## Provider Integrations
-
+### Provider Integrations
 | Provider | Guide | Status |
 |----------|-------|--------|
-| **aibtc** | [Integration Guide](./providers/aibtc.md) | ✅ Ready |
-| **Claw Cash** | [Integration Guide](./providers/clawcash.md) | ✅ Ready |
-| **Coinbase AgentKit** | Coming soon | ⏳ EVM only |
-| **Crossmint** | Coming soon | ⏳ Exploring |
+| **aibtc** | [Integration Guide](./providers/aibtc.md) | ✅ PR Merged |
+| **Claw Cash** | [Integration Guide](./providers/clawcash.md) | ⏳ PR Open |
+| **EVM Safe** | [Integration Guide](./providers/evm-safe.md) | ✅ Ready |
+| **Solana Squads** | Coming soon | ✅ Ready |
+| **Coinbase AgentKit** | [Issue #960](https://github.com/coinbase/agentkit/issues/960) | ⏳ Proposed |
 
-## Quick Links
+### Chain Support
+| Chain | Protocol | Status |
+|-------|----------|--------|
+| Bitcoin | Taproot Script-Path | ✅ Mainnet Proven |
+| Ethereum | Safe (Gnosis) | ✅ Deployed |
+| Base | Safe | ✅ Deployed |
+| Arbitrum | Safe | ✅ Ready |
+| Solana | Squads v4 | ✅ Ready |
+| Stacks | Coming soon | 🔜 Planned |
 
-- **Landing Page:** [agentmultisig.dev](https://agentmultisig.dev)
-- **GitHub:** [houseof-set/agent-multisig-api](https://github.com/houseof-set/agent-multisig-api)
-- **OpenAPI Spec:** [openapi.yaml](./openapi.yaml)
+---
 
-## Core Concepts
+## ✨ Features
 
-### Taproot Script-Path Multisig
+### 🔐 Non-Custodial
+Private keys never leave agent wallets. We coordinate signatures, never hold funds.
 
-Unlike P2SH or SegWit multisig, Taproot script-path multisig offers:
+### 🔌 Provider Agnostic
+Agent 1 uses aibtc. Agent 2 uses Claw Cash. Agent 3 is custom. They all share one multisig.
 
-- **Privacy:** On-chain, a single-sig spend looks identical to a multisig spend
-- **Efficiency:** Only reveal the script when spending, not when receiving
-- **Flexibility:** Complex spending conditions without bloating the chain
+### ⚡ Any Threshold
+2-of-3 for teams. 3-of-5 for DAOs. 5-of-7 for enterprises. You choose.
+
+### 📜 Full Visibility
+PSBT-native. Agents see exactly what they're signing. No blind signing required.
+
+### 🌐 Multi-Chain
+Same API, same flow. Bitcoin Taproot, EVM Safe, Solana Squads.
+
+### 🔔 Async Coordination
+Webhooks notify when signatures are needed. Agents sign on their own schedule.
+
+---
+
+## 🏗️ How It Works
+
+```
+┌──────────┐    ┌──────────┐    ┌──────────┐
+│  Agent A │    │  Agent B │    │  Agent C │
+│  (aibtc) │    │(ClawCash)│    │ (custom) │
+└────┬─────┘    └────┬─────┘    └────┬─────┘
+     │               │               │
+     │   Register    │   Register    │   Register
+     ▼               ▼               ▼
+┌─────────────────────────────────────────────┐
+│         Agent Multisig API                   │
+│  • Generate address (bc1p... or 0x...)       │
+│  • Coordinate proposals                      │
+│  • Collect signatures                        │
+│  • Finalize & broadcast                      │
+└─────────────────────────────────────────────┘
+                     │
+                     ▼
+            ┌────────────────┐
+            │   Blockchain   │
+            │  (BTC/EVM/SOL) │
+            └────────────────┘
+```
 
 ### Coordination Flow
 
+1. **Agents Register** → Each agent registers with their public key
+2. **Create Multisig** → Specify threshold (e.g., 2-of-3) and members
+3. **Fund Address** → Anyone sends funds to the generated address
+4. **Propose Spend** → Create a proposal with outputs
+5. **Sign** → Each agent signs the proposal independently
+6. **Execute** → Once threshold met, broadcast to chain
+
+---
+
+## 🔬 Mainnet Proof
+
+**Block 937432** - First 2-of-3 Taproot multisig coordination:
+
 ```
-┌─────────┐     ┌─────────┐     ┌─────────┐
-│ Agent 1 │     │ Agent 2 │     │ Agent 3 │
-│ (aibtc) │     │(ClawCash)│    │(custom) │
-└────┬────┘     └────┬────┘     └────┬────┘
-     │               │               │
-     └───────────────┼───────────────┘
-                     │
-              ┌──────▼──────┐
-              │   Multisig   │
-              │   Address    │
-              │  bc1p...     │
-              └──────┬───────┘
-                     │
-     ┌───────────────┼───────────────┐
-     │               │               │
-     ▼               ▼               ▼
-┌─────────┐   ┌─────────────┐   ┌─────────┐
-│Proposal │──▶│  2 of 3     │──▶│Broadcast│
-│ Created │   │  Signatures │   │   TX    │
-└─────────┘   └─────────────┘   └─────────┘
+TX: 8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4
 ```
 
-### PSBT Workflow
+[View on mempool.space →](https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4)
 
-1. **Create Proposal** → Generates PSBT and sighash
-2. **Sign** → Each agent signs the sighash with BIP-340 Schnorr
-3. **Finalize** → Combine signatures into witness
-4. **Broadcast** → Submit to Bitcoin network
+---
 
-## Security Model
+## 📦 SDKs
 
-- **Non-custodial:** Private keys never leave agent wallets
-- **No key aggregation:** Each agent signs independently
-- **Threshold enforcement:** On-chain script enforces m-of-n
-- **Replay protection:** Each PSBT has unique sighash per input
+All SDKs have **zero external dependencies**.
 
-## FAQ
+| Language | Install | Docs |
+|----------|---------|------|
+| TypeScript | `npm i agent-multisig` | [README](../sdk/typescript/README.md) |
+| Python | `pip install agent-multisig` | [README](../sdk/python/README.md) |
+| Go | `go get github.com/aetos53t/agent-multisig-api/sdk/go` | [README](../sdk/go/README.md) |
+| CLI | `npx @agent-multisig/cli` | [README](../cli/README.md) |
+| MCP | `npx agent-multisig-mcp` | [README](../mcp-server/README.md) |
 
-### Why Taproot instead of P2SH multisig?
+---
 
-Taproot is more private (doesn't reveal it's a multisig until spent), more efficient (smaller witness), and more flexible (supports complex scripts).
+## 🔒 Security
 
-### Can agents be on different wallet providers?
+- **Non-custodial** - Keys stay with agents
+- **No key aggregation** - Each agent signs independently  
+- **Threshold on-chain** - Script enforces m-of-n
+- **Battle-tested crypto** - @scure/btc-signer, @noble/curves
+- **Standard protocols** - BIP-340, BIP-341, BIP-370, EIP-712
 
-Yes! That's the whole point. Agent 1 can use aibtc, Agent 2 can use Claw Cash, and they can still share a multisig.
+→ See [SECURITY.md](../SECURITY.md) for full details.
 
-### What happens if an agent goes offline?
+---
 
-As long as you have threshold signatures (e.g., 2 of 3), the transaction can proceed without the offline agent. That's the point of threshold multisig.
+## 🤔 FAQ
 
-### Is this mainnet-ready?
+**Why not just use a regular multisig?**  
+Regular multisig requires all signers to use the same wallet software. This API lets agents from completely different providers coordinate.
 
-Yes. The API is designed for production use. We use battle-tested libraries (@scure/btc-signer, @noble/curves) and standard Bitcoin protocols (BIP-340, BIP-341, BIP-370).
+**Can I mix chains?**  
+Not in a single multisig - each multisig is chain-specific. But the same API works for all chains.
 
-### How do I handle fee estimation?
+**What if an agent goes offline?**  
+As long as threshold is met (e.g., 2 of 3), the transaction proceeds without them.
 
-Pass `feeRate` (sats/vbyte) when creating a proposal. The API calculates the total fee based on the transaction size. For dynamic fees, query mempool.space or your preferred fee estimator.
+**Is this production-ready?**  
+Yes. Proven on Bitcoin mainnet. Using battle-tested libraries and standard protocols.
+
+---
+
+## 🔗 Links
+
+- **API:** https://agent-multisig-api-production.up.railway.app
+- **GitHub:** https://github.com/aetos53t/agent-multisig-api
+- **Issues:** https://github.com/aetos53t/agent-multisig-api/issues
+
+---
+
+<p align="center">
+  Built by <a href="https://github.com/houseof-set">The House of Set</a> 🏛️
+</p>
