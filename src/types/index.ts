@@ -209,10 +209,12 @@ export interface Multisig {
     principals: string[];
   };
   
-  // EVM-specific (future)
+  // EVM-specific (Safe / Gnosis Safe)
   evm?: {
-    contractAddress: string;
-    implementationType: 'gnosis-safe' | 'custom';
+    owners: `0x${string}`[];
+    safeVersion: string;
+    isDeployed: boolean;
+    saltNonce?: string;
   };
   
   createdAt: Date;

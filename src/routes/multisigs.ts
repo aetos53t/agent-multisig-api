@@ -19,7 +19,13 @@ import type {
 } from '../types';
 import { createP2TRMultisig, compressedToXOnly } from '../services/taproot';
 import { getBalance, getUtxos, p2trScriptPubkey } from '../services/bitcoin';
+import { isEVMChain, predictSafeAddress } from '../adapters/evm-safe';
 import repo from '../db/repository';
+
+// Chain type detection
+function isBitcoinChain(chainId: string): boolean {
+  return chainId.startsWith('bitcoin-');
+}
 
 const router = new Hono();
 
@@ -39,9 +45,17 @@ const AgentInputSchema = z.object({
 const CreateMultisigSchema = z.object({
   name: z.string().min(1).max(256),
   chainId: z.enum([
+    // Bitcoin
     'bitcoin-mainnet',
     'bitcoin-testnet', 
     'bitcoin-signet',
+    // EVM (Safe)
+    'ethereum',
+    'base',
+    'arbitrum',
+    // Solana (coming soon)
+    // 'solana-mainnet',
+    // 'solana-devnet',
   ]),
   agents: z.array(AgentInputSchema).min(2).max(20),
   threshold: z.number().int().min(2).max(20),
@@ -79,7 +93,10 @@ router.post('/', async (c) => {
     // Register/update agents
     const agentRecords: Agent[] = [];
     for (const agentInput of input.agents) {
-      const xOnlyPubkey = compressedToXOnly(agentInput.publicKey);
+      // For Bitcoin we convert to x-only, for EVM we keep as-is
+      const xOnlyPubkey = isBitcoinChain(input.chainId) 
+        ? compressedToXOnly(agentInput.publicKey)
+        : undefined;
       
       // Check if agent exists
       let agent = await repo.getAgent(agentInput.id);
@@ -102,57 +119,110 @@ router.post('/', async (c) => {
     
     // Sort agents by pubkey for deterministic address
     const sortedAgents = [...agentRecords].sort((a, b) => {
-      const pkA = a.xOnlyPubkey || compressedToXOnly(a.publicKey);
-      const pkB = b.xOnlyPubkey || compressedToXOnly(b.publicKey);
-      return pkA.localeCompare(pkB);
+      const pkA = a.xOnlyPubkey || a.publicKey;
+      const pkB = b.xOnlyPubkey || b.publicKey;
+      return pkA.toLowerCase().localeCompare(pkB.toLowerCase());
     });
     
-    // Get x-only pubkeys
-    const xOnlyPubkeys = sortedAgents.map(a => a.xOnlyPubkey || compressedToXOnly(a.publicKey));
-    
-    // Create P2TR multisig
-    const p2tr = createP2TRMultisig(
-      xOnlyPubkeys,
-      input.threshold,
-      input.chainId as ChainId
-    );
-    
-    // Create agent list with positions
-    const agentList = sortedAgents.map((a, index) => ({
-      ...a,
-      xOnlyPubkey: xOnlyPubkeys[index],
-    }));
-    
-    // Update leaves with agent IDs
-    const scriptTree = {
-      ...p2tr.scriptTree,
-      leaves: p2tr.scriptTree.leaves.map(leaf => ({
-        ...leaf,
-        signerAgentIds: leaf.signerPubkeys.map(pk => {
-          const agent = agentList.find(a => a.xOnlyPubkey === pk);
-          return agent?.id || '';
-        }),
-      })),
-    };
-    
-    // Create multisig record
+    let multisig: Multisig;
     const multisigId = crypto.randomUUID();
-    const multisig: Multisig = {
-      id: multisigId,
-      name: input.name,
-      chainId: input.chainId as ChainId,
-      address: p2tr.address,
-      threshold: input.threshold,
-      agents: agentList,
-      bitcoin: {
-        internalPubkey: p2tr.internalPubkey,
-        scriptTree,
-        merkleRoot: p2tr.scriptTree.root,
-        tweakedPubkey: p2tr.tweakedPubkey,
-      },
-      createdAt: new Date(),
-      createdBy: sortedAgents[0].id,
-    };
+    const agentList = sortedAgents.map(a => ({ ...a }));
+    
+    // ═══════════════════════════════════════════════════════════════
+    //                    BITCOIN (Taproot)
+    // ═══════════════════════════════════════════════════════════════
+    if (isBitcoinChain(input.chainId)) {
+      // Get x-only pubkeys
+      const xOnlyPubkeys = sortedAgents.map(a => a.xOnlyPubkey || compressedToXOnly(a.publicKey));
+      
+      // Create P2TR multisig
+      const p2tr = createP2TRMultisig(
+        xOnlyPubkeys,
+        input.threshold,
+        input.chainId as ChainId
+      );
+      
+      // Update agents with x-only pubkeys
+      agentList.forEach((a, i) => { a.xOnlyPubkey = xOnlyPubkeys[i]; });
+      
+      // Update leaves with agent IDs
+      const scriptTree = {
+        ...p2tr.scriptTree,
+        leaves: p2tr.scriptTree.leaves.map(leaf => ({
+          ...leaf,
+          signerAgentIds: leaf.signerPubkeys.map(pk => {
+            const agent = agentList.find(a => a.xOnlyPubkey === pk);
+            return agent?.id || '';
+          }),
+        })),
+      };
+      
+      multisig = {
+        id: multisigId,
+        name: input.name,
+        chainId: input.chainId as ChainId,
+        address: p2tr.address,
+        threshold: input.threshold,
+        agents: agentList,
+        bitcoin: {
+          internalPubkey: p2tr.internalPubkey,
+          scriptTree,
+          merkleRoot: p2tr.scriptTree.root,
+          tweakedPubkey: p2tr.tweakedPubkey,
+        },
+        createdAt: new Date(),
+        createdBy: sortedAgents[0].id,
+      };
+    }
+    // ═══════════════════════════════════════════════════════════════
+    //                    EVM (Safe / Gnosis Safe)
+    // ═══════════════════════════════════════════════════════════════
+    else if (isEVMChain(input.chainId as ChainId)) {
+      // For EVM, publicKey should be an Ethereum address (0x...)
+      const owners = sortedAgents.map(a => {
+        // If pubkey starts with 0x and is 42 chars, it's already an address
+        if (a.publicKey.startsWith('0x') && a.publicKey.length === 42) {
+          return a.publicKey as `0x${string}`;
+        }
+        // Otherwise it might be a compressed/uncompressed pubkey - derive address
+        // For now, require addresses directly
+        throw new Error(`Agent ${a.id}: EVM requires Ethereum address (0x...) as publicKey`);
+      });
+      
+      // Predict Safe address (deterministic via CREATE2)
+      const safeAddress = predictSafeAddress(
+        { owners, threshold: input.threshold },
+        input.chainId as ChainId
+      );
+      
+      multisig = {
+        id: multisigId,
+        name: input.name,
+        chainId: input.chainId as ChainId,
+        address: safeAddress,
+        threshold: input.threshold,
+        agents: agentList,
+        evm: {
+          owners,
+          safeVersion: '1.3.0',
+          isDeployed: false, // Safe needs to be deployed on first tx
+        },
+        createdAt: new Date(),
+        createdBy: sortedAgents[0].id,
+      };
+    }
+    // ═══════════════════════════════════════════════════════════════
+    //                    UNSUPPORTED CHAIN
+    // ═══════════════════════════════════════════════════════════════
+    else {
+      return c.json<ApiResponse<never>>({
+        success: false,
+        error: {
+          code: 'UNSUPPORTED_CHAIN',
+          message: `Chain ${input.chainId} not yet supported`,
+        },
+      }, 400);
+    }
     
     // Store with agent positions
     const agentPositions = sortedAgents.map((a, i) => ({
