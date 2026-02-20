@@ -81,14 +81,52 @@ v1.route('/webhooks', webhooksRouter);
 
 app.route('/v1', v1);
 
-// Root redirect
-app.get('/', (c) => {
-  return c.json({
-    name: 'Agent Multisig Coordination API',
-    version: '0.1.0',
-    docs: '/v1',
-    health: '/health',
-  });
+// Serve landing page at root
+app.get('/', async (c) => {
+  try {
+    const file = Bun.file('./landing/index.html');
+    const html = await file.text();
+    return c.html(html);
+  } catch {
+    return c.json({
+      name: 'Agent Multisig Coordination API',
+      version: '0.1.0',
+      api: '/v1',
+      health: '/health',
+    });
+  }
+});
+
+// Serve docs
+app.get('/docs', async (c) => {
+  try {
+    const file = Bun.file('./docs/index.html');
+    const html = await file.text();
+    return c.html(html);
+  } catch {
+    return c.redirect('https://github.com/aetos53t/agent-multisig-api/tree/main/docs');
+  }
+});
+
+// Serve docs files (for docsify)
+app.get('/docs/*', async (c) => {
+  const path = c.req.path.replace('/docs/', '');
+  try {
+    const file = Bun.file(`./docs/${path}`);
+    const content = await file.text();
+    const ext = path.split('.').pop();
+    const contentTypes: Record<string, string> = {
+      'md': 'text/markdown',
+      'html': 'text/html',
+      'yaml': 'text/yaml',
+      'json': 'application/json',
+    };
+    return c.text(content, 200, { 
+      'Content-Type': contentTypes[ext || 'md'] || 'text/plain' 
+    });
+  } catch {
+    return c.notFound();
+  }
 });
 
 // 404 handler
