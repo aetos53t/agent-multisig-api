@@ -1,7 +1,7 @@
 /**
  * Solana Squads Adapter
  * 
- * Wraps the Squads Protocol for Solana multisig operations.
+ * Wraps the Squads Protocol v4 for Solana multisig operations.
  * 
  * Key concepts:
  * - Squads uses PDAs (Program Derived Addresses) for multisig accounts
@@ -12,235 +12,409 @@
  * @see https://github.com/Squads-Protocol/v4
  */
 
-// Note: This is a scaffold. Full implementation requires @sqds/multisig SDK.
+import { 
+  Connection, 
+  PublicKey, 
+  Transaction,
+  Keypair,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+} from '@solana/web3.js';
+import * as multisig from '@sqds/multisig';
+
+// ═══════════════════════════════════════════════════════════════════
+//                          CHAIN CONFIG
+// ═══════════════════════════════════════════════════════════════════
 
 export const SOLANA_CHAINS = {
   'solana-mainnet': 'mainnet-beta',
   'solana-devnet': 'devnet',
-  'solana-testnet': 'testnet',
 } as const;
 
 export type SolanaChainId = keyof typeof SOLANA_CHAINS;
 
-/**
- * Check if a chain ID is a Solana chain
- */
+export const SOLANA_RPC_URLS: Record<SolanaChainId, string> = {
+  'solana-mainnet': 'https://api.mainnet-beta.solana.com',
+  'solana-devnet': 'https://api.devnet.solana.com',
+};
+
 export function isSolanaChain(chainId: string): chainId is SolanaChainId {
   return chainId in SOLANA_CHAINS;
 }
 
-/**
- * Get Solana cluster name
- */
 export function getSolanaCluster(chainId: SolanaChainId): string {
   return SOLANA_CHAINS[chainId];
 }
 
-/**
- * Squads multisig configuration
- */
-export interface SquadConfig {
-  /** Squad PDA address (base58) */
-  squadAddress: string;
-  /** Vault PDA address (base58) */
-  vaultAddress: string;
+// ═══════════════════════════════════════════════════════════════════
+//                              TYPES
+// ═══════════════════════════════════════════════════════════════════
+
+export interface SquadsConfig {
+  /** Multisig PDA address (base58) */
+  multisigAddress: string;
+  /** Create key that was used (for PDA derivation) */
+  createKey: string;
   /** Member public keys (base58) */
   members: string[];
   /** Required approvals */
   threshold: number;
   /** Current transaction index */
-  transactionIndex: number;
+  transactionIndex: bigint;
 }
 
-/**
- * Pending transaction in Squads
- */
-export interface SquadTransaction {
-  /** Transaction PDA address (base58) */
-  address: string;
+export interface SquadsProposal {
+  /** Vault transaction PDA */
+  vaultTransactionAddress: string;
   /** Transaction index */
-  index: number;
-  /** Creator public key */
+  transactionIndex: bigint;
+  /** Creator */
   creator: string;
-  /** Instructions to execute */
-  instructions: SquadInstruction[];
+  /** Proposal PDA (for voting) */
+  proposalAddress: string;
   /** Current approvals */
-  approvals: SquadApproval[];
-  /** Transaction status */
-  status: 'pending' | 'approved' | 'executed' | 'cancelled';
+  approvals: string[];
+  /** Status */
+  status: 'active' | 'approved' | 'executed' | 'cancelled' | 'rejected';
 }
 
-export interface SquadInstruction {
-  programId: string;
-  keys: Array<{
-    pubkey: string;
-    isSigner: boolean;
-    isWritable: boolean;
-  }>;
-  data: string; // base64
-}
+// ═══════════════════════════════════════════════════════════════════
+//                         ADAPTER CLASS
+// ═══════════════════════════════════════════════════════════════════
 
-export interface SquadApproval {
-  member: string;
-  timestamp: number;
-}
-
-/**
- * Signing payload for Solana
- * 
- * Note: Unlike Bitcoin/EVM, Solana signatures are over the full serialized transaction,
- * not just a hash. The Squads SDK handles this internally.
- */
-export interface SolanaSigningPayload {
-  /** The transaction message to sign */
-  message: Uint8Array;
-  /** Human-readable description */
-  description: string;
-  /** Transaction index */
-  transactionIndex: number;
-  /** Squad address */
-  squadAddress: string;
-}
-
-/**
- * Solana Squads Adapter
- */
 export class SolanaSquadsAdapter {
-  readonly provider = 'squads';
+  private connection: Connection;
   readonly chainId: SolanaChainId;
-  
-  // Squads SDK client would be initialized here
-  // private squads: any;
   
   constructor(chainId: SolanaChainId = 'solana-mainnet') {
     this.chainId = chainId;
-    // TODO: Initialize Squads SDK
-    // this.squads = Squads.endpoint(getSolanaCluster(chainId));
+    this.connection = new Connection(SOLANA_RPC_URLS[chainId], 'confirmed');
   }
   
   /**
-   * Get supported chains
+   * Predict multisig address from a create key
+   * Squads uses PDAs - same inputs always produce same address
    */
-  supportedChains(): string[] {
-    return Object.keys(SOLANA_CHAINS);
+  predictMultisigAddress(createKey: string): string {
+    const createKeyPubkey = new PublicKey(createKey);
+    const [multisigPda] = multisig.getMultisigPda({ createKey: createKeyPubkey });
+    return multisigPda.toBase58();
   }
   
   /**
-   * Create a new Squad (multisig)
+   * Predict vault address (where funds are held)
    */
-  async createSquad(params: {
-    members: string[];
-    threshold: number;
-    name?: string;
-  }): Promise<SquadConfig> {
-    // TODO: Implement with Squads SDK
-    // const createKey = Keypair.generate();
-    // const [squadPda] = multisig.getSquadPda({ createKey: createKey.publicKey });
-    // await multisig.create({ ... });
-    throw new Error('Not implemented - requires @sqds/multisig SDK');
+  predictVaultAddress(multisigAddress: string, vaultIndex = 0): string {
+    const multisigPda = new PublicKey(multisigAddress);
+    const [vaultPda] = multisig.getVaultPda({ 
+      multisigPda, 
+      index: vaultIndex 
+    });
+    return vaultPda.toBase58();
   }
   
   /**
-   * Get Squad configuration
+   * Get multisig account info
    */
-  async getSquad(squadAddress: string): Promise<SquadConfig> {
-    // TODO: Fetch from chain
-    throw new Error('Not implemented - requires @sqds/multisig SDK');
-  }
-  
-  /**
-   * Create a transaction proposal
-   */
-  async createTransaction(params: {
-    squadAddress: string;
-    instructions: SquadInstruction[];
-    memo?: string;
-  }): Promise<SquadTransaction> {
-    // TODO: Implement with Squads SDK
-    // await multisig.createTransaction({ ... });
-    throw new Error('Not implemented - requires @sqds/multisig SDK');
-  }
-  
-  /**
-   * Get transaction details
-   */
-  async getTransaction(
-    squadAddress: string,
-    transactionIndex: number
-  ): Promise<SquadTransaction> {
-    // TODO: Fetch from chain
-    throw new Error('Not implemented - requires @sqds/multisig SDK');
-  }
-  
-  /**
-   * Get signing payload for approval
-   * 
-   * In Squads, you sign an "approval" transaction, not the underlying tx directly.
-   */
-  async getSigningPayload(
-    squadAddress: string,
-    transactionIndex: number
-  ): Promise<{
-    digest: string;
-    raw: {
-      solana: {
-        transaction: string; // Base64 serialized transaction
-        squadAddress: string;
-        transactionIndex: number;
+  async getMultisig(multisigAddress: string): Promise<SquadsConfig | null> {
+    try {
+      const multisigPda = new PublicKey(multisigAddress);
+      const multisigAccount = await multisig.accounts.Multisig.fromAccountAddress(
+        this.connection,
+        multisigPda
+      );
+      
+      return {
+        multisigAddress,
+        createKey: multisigAccount.createKey.toBase58(),
+        members: multisigAccount.members.map(m => m.key.toBase58()),
+        threshold: multisigAccount.threshold,
+        transactionIndex: multisigAccount.transactionIndex,
       };
-    };
-    message: string;
-  }> {
-    // TODO: Build the approval transaction and return its message for signing
-    // The digest would be the transaction message hash (for ed25519 signing)
-    throw new Error('Not implemented - requires @sqds/multisig SDK');
+    } catch (e) {
+      return null;
+    }
   }
   
   /**
-   * Submit approval (signature)
+   * Check if multisig exists on chain
+   */
+  async isMultisigDeployed(multisigAddress: string): Promise<boolean> {
+    const info = await this.getMultisig(multisigAddress);
+    return info !== null;
+  }
+  
+  /**
+   * Get vault balance in lamports
+   */
+  async getVaultBalance(multisigAddress: string, vaultIndex = 0): Promise<bigint> {
+    const vaultAddress = this.predictVaultAddress(multisigAddress, vaultIndex);
+    const balance = await this.connection.getBalance(new PublicKey(vaultAddress));
+    return BigInt(balance);
+  }
+  
+  /**
+   * Build transaction to create a new Squads multisig
    * 
-   * In Squads, each approval is a separate on-chain transaction.
+   * Note: This returns the transaction - caller must sign with the createKey
+   * and a fee payer, then broadcast.
    */
-  async submitApproval(params: {
-    squadAddress: string;
-    transactionIndex: number;
-    memberPubkey: string;
-    signature: string; // ed25519 signature (128 hex chars / 64 bytes)
-  }): Promise<{
-    approvalCount: number;
+  async buildCreateMultisigTx(params: {
+    createKey: string;  // Random keypair pubkey for deterministic PDA
+    members: string[];  // Member pubkeys (base58)
     threshold: number;
-    canExecute: boolean;
-  }> {
-    // TODO: Submit approval transaction
-    // await multisig.approveTransaction({ ... });
-    throw new Error('Not implemented - requires @sqds/multisig SDK');
-  }
-  
-  /**
-   * Execute transaction (when threshold reached)
-   */
-  async executeTransaction(params: {
-    squadAddress: string;
-    transactionIndex: number;
+    feePayer: string;
   }): Promise<{
-    txSignature: string;
-    success: boolean;
+    transaction: string;  // Base64 serialized
+    multisigAddress: string;
+    vaultAddress: string;
   }> {
-    // TODO: Execute the transaction
-    // await multisig.executeTransaction({ ... });
-    throw new Error('Not implemented - requires @sqds/multisig SDK');
+    const { createKey, members, threshold, feePayer } = params;
+    
+    const createKeyPubkey = new PublicKey(createKey);
+    const feePayerPubkey = new PublicKey(feePayer);
+    
+    const [multisigPda] = multisig.getMultisigPda({ createKey: createKeyPubkey });
+    const [vaultPda] = multisig.getVaultPda({ multisigPda, index: 0 });
+    
+    // Build the create instruction
+    const createIx = multisig.instructions.multisigCreateV2({
+      createKey: createKeyPubkey,
+      creator: feePayerPubkey,
+      multisigPda,
+      configAuthority: null,
+      timeLock: 0,
+      members: members.map(m => ({
+        key: new PublicKey(m),
+        permissions: multisig.types.Permissions.all(),
+      })),
+      threshold,
+      rentCollector: null,
+      treasury: feePayerPubkey,
+      programId: multisig.PROGRAM_ID,
+    });
+    
+    const tx = new Transaction().add(createIx);
+    tx.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    tx.feePayer = feePayerPubkey;
+    
+    return {
+      transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'),
+      multisigAddress: multisigPda.toBase58(),
+      vaultAddress: vaultPda.toBase58(),
+    };
   }
   
   /**
-   * Verify an ed25519 signature
+   * Build a vault transfer transaction proposal
    */
-  async verifySignature(
-    message: Uint8Array,
-    signature: string,
-    publicKey: string
-  ): Promise<boolean> {
-    // TODO: Use @noble/ed25519 or tweetnacl for verification
-    throw new Error('Not implemented');
+  async buildTransferProposal(params: {
+    multisigAddress: string;
+    destination: string;
+    amount: bigint;  // in lamports
+    creator: string;
+    memo?: string;
+  }): Promise<{
+    transaction: string;
+    vaultTransactionAddress: string;
+    proposalAddress: string;
+    transactionIndex: bigint;
+  }> {
+    const { multisigAddress, destination, amount, creator, memo } = params;
+    
+    const multisigPda = new PublicKey(multisigAddress);
+    const creatorPubkey = new PublicKey(creator);
+    const destinationPubkey = new PublicKey(destination);
+    
+    // Get current transaction index
+    const multisigAccount = await multisig.accounts.Multisig.fromAccountAddress(
+      this.connection,
+      multisigPda
+    );
+    const transactionIndex = multisigAccount.transactionIndex + 1n;
+    
+    const [vaultPda] = multisig.getVaultPda({ multisigPda, index: 0 });
+    const [vaultTransactionPda] = multisig.getTransactionPda({
+      multisigPda,
+      index: transactionIndex,
+    });
+    const [proposalPda] = multisig.getProposalPda({
+      multisigPda,
+      transactionIndex,
+    });
+    
+    // Create the vault transaction (SOL transfer)
+    const transferIx = SystemProgram.transfer({
+      fromPubkey: vaultPda,
+      toPubkey: destinationPubkey,
+      lamports: Number(amount),
+    });
+    
+    const createVaultTxIx = multisig.instructions.vaultTransactionCreate({
+      multisigPda,
+      transactionIndex,
+      creator: creatorPubkey,
+      vaultIndex: 0,
+      ephemeralSigners: 0,
+      transactionMessage: new multisig.TransactionMessage({
+        payerKey: vaultPda,
+        recentBlockhash: (await this.connection.getLatestBlockhash()).blockhash,
+        instructions: [transferIx],
+      }),
+      memo,
+      programId: multisig.PROGRAM_ID,
+    });
+    
+    // Create proposal for voting
+    const createProposalIx = multisig.instructions.proposalCreate({
+      multisigPda,
+      transactionIndex,
+      creator: creatorPubkey,
+      programId: multisig.PROGRAM_ID,
+    });
+    
+    // Auto-approve by creator
+    const approveIx = multisig.instructions.proposalApprove({
+      multisigPda,
+      transactionIndex,
+      member: creatorPubkey,
+      programId: multisig.PROGRAM_ID,
+    });
+    
+    const tx = new Transaction()
+      .add(createVaultTxIx)
+      .add(createProposalIx)
+      .add(approveIx);
+    
+    tx.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    tx.feePayer = creatorPubkey;
+    
+    return {
+      transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'),
+      vaultTransactionAddress: vaultTransactionPda.toBase58(),
+      proposalAddress: proposalPda.toBase58(),
+      transactionIndex,
+    };
+  }
+  
+  /**
+   * Build approval transaction
+   */
+  async buildApprovalTx(params: {
+    multisigAddress: string;
+    transactionIndex: bigint;
+    member: string;
+  }): Promise<{
+    transaction: string;
+    proposalAddress: string;
+  }> {
+    const { multisigAddress, transactionIndex, member } = params;
+    
+    const multisigPda = new PublicKey(multisigAddress);
+    const memberPubkey = new PublicKey(member);
+    
+    const [proposalPda] = multisig.getProposalPda({
+      multisigPda,
+      transactionIndex,
+    });
+    
+    const approveIx = multisig.instructions.proposalApprove({
+      multisigPda,
+      transactionIndex,
+      member: memberPubkey,
+      programId: multisig.PROGRAM_ID,
+    });
+    
+    const tx = new Transaction().add(approveIx);
+    tx.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    tx.feePayer = memberPubkey;
+    
+    return {
+      transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'),
+      proposalAddress: proposalPda.toBase58(),
+    };
+  }
+  
+  /**
+   * Build execute transaction (when threshold is met)
+   */
+  async buildExecuteTx(params: {
+    multisigAddress: string;
+    transactionIndex: bigint;
+    member: string;
+  }): Promise<{
+    transaction: string;
+  }> {
+    const { multisigAddress, transactionIndex, member } = params;
+    
+    const multisigPda = new PublicKey(multisigAddress);
+    const memberPubkey = new PublicKey(member);
+    
+    const [vaultPda] = multisig.getVaultPda({ multisigPda, index: 0 });
+    const [vaultTransactionPda] = multisig.getTransactionPda({
+      multisigPda,
+      index: transactionIndex,
+    });
+    
+    const executeIx = multisig.instructions.vaultTransactionExecute({
+      multisigPda,
+      transactionIndex,
+      member: memberPubkey,
+      programId: multisig.PROGRAM_ID,
+    });
+    
+    const tx = new Transaction().add(executeIx);
+    tx.recentBlockhash = (await this.connection.getLatestBlockhash()).blockhash;
+    tx.feePayer = memberPubkey;
+    
+    return {
+      transaction: tx.serialize({ requireAllSignatures: false }).toString('base64'),
+    };
+  }
+  
+  /**
+   * Get proposal status
+   */
+  async getProposalStatus(
+    multisigAddress: string,
+    transactionIndex: bigint
+  ): Promise<SquadsProposal | null> {
+    try {
+      const multisigPda = new PublicKey(multisigAddress);
+      
+      const [vaultTransactionPda] = multisig.getTransactionPda({
+        multisigPda,
+        index: transactionIndex,
+      });
+      
+      const [proposalPda] = multisig.getProposalPda({
+        multisigPda,
+        transactionIndex,
+      });
+      
+      const proposalAccount = await multisig.accounts.Proposal.fromAccountAddress(
+        this.connection,
+        proposalPda
+      );
+      
+      // Decode status
+      let status: SquadsProposal['status'] = 'active';
+      if ('approved' in proposalAccount.status) status = 'approved';
+      else if ('executed' in proposalAccount.status) status = 'executed';
+      else if ('cancelled' in proposalAccount.status) status = 'cancelled';
+      else if ('rejected' in proposalAccount.status) status = 'rejected';
+      
+      return {
+        vaultTransactionAddress: vaultTransactionPda.toBase58(),
+        transactionIndex,
+        creator: proposalPda.toBase58(), // Would need to fetch from tx
+        proposalAddress: proposalPda.toBase58(),
+        approvals: proposalAccount.approved.map(pk => pk.toBase58()),
+        status,
+      };
+    } catch (e) {
+      return null;
+    }
   }
 }
 
@@ -261,18 +435,18 @@ export function createSolanaSquadsAdapter(
  *    - Ethereum: secp256k1 ECDSA
  *    - Solana: ed25519 (EdDSA)
  * 
- * 2. Signature Size:
- *    - Bitcoin Schnorr: 64 bytes
- *    - Ethereum ECDSA: 65 bytes (r, s, v)
- *    - Solana ed25519: 64 bytes
+ * 2. Coordination Model:
+ *    - Bitcoin: Aggregate signatures into PSBT witness, then broadcast
+ *    - Ethereum: Collect signatures off-chain, call execTransaction()
+ *    - Solana: Each approval is a separate on-chain tx, then execute tx
  * 
- * 3. Coordination Model:
- *    - Bitcoin: Aggregate signatures into PSBT witness
- *    - Ethereum: Collect signatures, call execTransaction()
- *    - Solana: Each approval is a separate tx, then execute
- * 
- * 4. Address Format:
+ * 3. Address Format:
  *    - Bitcoin: bc1p... (bech32m)
- *    - Ethereum: 0x... (hex)
- *    - Solana: Base58 (32 bytes)
+ *    - Ethereum: 0x... (hex, 40 chars)
+ *    - Solana: Base58 (44 chars typically)
+ * 
+ * 4. Deployment:
+ *    - Bitcoin: No deployment needed, address derived from keys
+ *    - Ethereum: Safe must be deployed (contract), but address is predictable
+ *    - Solana: Squads must be created (on-chain state), address is PDA
  */

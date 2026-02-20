@@ -20,6 +20,8 @@ import type {
 import { createP2TRMultisig, compressedToXOnly } from '../services/taproot';
 import { getBalance, getUtxos, p2trScriptPubkey } from '../services/bitcoin';
 import { isEVMChain, predictSafeAddress } from '../adapters/evm-safe';
+import { isSolanaChain, SolanaSquadsAdapter } from '../adapters/solana-squads';
+import { Keypair } from '@solana/web3.js';
 import repo from '../db/repository';
 
 // Chain type detection
@@ -53,9 +55,9 @@ const CreateMultisigSchema = z.object({
     'ethereum',
     'base',
     'arbitrum',
-    // Solana (coming soon)
-    // 'solana-mainnet',
-    // 'solana-devnet',
+    // Solana (Squads)
+    'solana-mainnet',
+    'solana-devnet',
   ]),
   agents: z.array(AgentInputSchema).min(2).max(20),
   threshold: z.number().int().min(2).max(20),
@@ -206,6 +208,45 @@ router.post('/', async (c) => {
           owners,
           safeVersion: '1.3.0',
           isDeployed: false, // Safe needs to be deployed on first tx
+        },
+        createdAt: new Date(),
+        createdBy: sortedAgents[0].id,
+      };
+    }
+    // ═══════════════════════════════════════════════════════════════
+    //                    SOLANA (Squads v4)
+    // ═══════════════════════════════════════════════════════════════
+    else if (isSolanaChain(input.chainId)) {
+      // For Solana, publicKey should be base58 pubkey
+      const members = sortedAgents.map(a => {
+        // Validate it looks like a Solana pubkey (base58, ~44 chars)
+        if (a.publicKey.length < 32 || a.publicKey.length > 50) {
+          throw new Error(`Agent ${a.id}: Solana requires base58 public key`);
+        }
+        return a.publicKey;
+      });
+      
+      // Generate a random create key for deterministic PDA
+      const createKey = Keypair.generate();
+      const createKeyBase58 = createKey.publicKey.toBase58();
+      
+      // Predict addresses using Squads
+      const adapter = new SolanaSquadsAdapter(input.chainId);
+      const multisigAddress = adapter.predictMultisigAddress(createKeyBase58);
+      const vaultAddress = adapter.predictVaultAddress(multisigAddress);
+      
+      multisig = {
+        id: multisigId,
+        name: input.name,
+        chainId: input.chainId as ChainId,
+        address: vaultAddress, // Use vault address as the "receive" address
+        threshold: input.threshold,
+        agents: agentList,
+        solana: {
+          createKey: createKeyBase58,
+          multisigAddress,
+          vaultAddress,
+          isDeployed: false, // Needs on-chain creation
         },
         createdAt: new Date(),
         createdBy: sortedAgents[0].id,

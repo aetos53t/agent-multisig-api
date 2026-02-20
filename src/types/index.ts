@@ -18,7 +18,9 @@ export type ChainId =
   | 'stacks-testnet'
   | 'ethereum'
   | 'base'
-  | 'arbitrum';
+  | 'arbitrum'
+  | 'solana-mainnet'
+  | 'solana-devnet';
 
 export type ChainType = 'utxo' | 'account';
 
@@ -92,6 +94,20 @@ export const CHAIN_CONFIGS: Record<ChainId, ChainConfig> = {
     signatureScheme: 'ecdsa',
     addressPrefix: '0x',
     explorerUrl: 'https://arbiscan.io',
+  },
+  'solana-mainnet': {
+    chainId: 'solana-mainnet',
+    type: 'account',
+    signatureScheme: 'ecdsa', // Actually ed25519, but not in our enum
+    addressPrefix: '',
+    explorerUrl: 'https://solscan.io',
+  },
+  'solana-devnet': {
+    chainId: 'solana-devnet',
+    type: 'account',
+    signatureScheme: 'ecdsa',
+    addressPrefix: '',
+    explorerUrl: 'https://solscan.io/?cluster=devnet',
   },
 };
 
@@ -215,6 +231,14 @@ export interface Multisig {
     safeVersion: string;
     isDeployed: boolean;
     saltNonce?: string;
+  };
+  
+  // Solana-specific (Squads v4)
+  solana?: {
+    createKey: string;           // Random key used for PDA derivation
+    multisigAddress: string;     // Multisig PDA
+    vaultAddress: string;        // Vault PDA (where funds live)
+    isDeployed: boolean;
   };
   
   createdAt: Date;
