@@ -1,5 +1,5 @@
 /**
- * Agent Multisig Coordination API
+ * Quorum API
  * 
  * Main entry point for the Hono application.
  * 
@@ -89,7 +89,7 @@ app.get('/', async (c) => {
     return c.html(html);
   } catch {
     return c.json({
-      name: 'Agent Multisig Coordination API',
+      name: 'Quorum API',
       version: '0.1.0',
       api: '/v1',
       health: '/health',
@@ -163,7 +163,7 @@ const port = parseInt(process.env.PORT || '3000', 10);
 
 console.log(`
 ╔═══════════════════════════════════════════════════════════════════╗
-║           Agent Multisig Coordination API v0.1.0                  ║
+║           Quorum API v0.1.0                               ║
 ╠═══════════════════════════════════════════════════════════════════╣
 ║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(46)}║
 ║  Port: ${port.toString().padEnd(53)}║
