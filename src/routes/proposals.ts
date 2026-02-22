@@ -435,15 +435,19 @@ router.post('/:id/sign', async (c) => {
   };
   await repo.addSignature(proposalId, sig);
   
-  // Update PSBT with signature
+  // Update PSBT with signature for ALL inputs (they all use the same script)
   let signedTx = proposal.signedTx || proposal.unsignedTx;
+  const numInputs = proposal.inputs?.length || 1;
+  
   try {
-    signedTx = addSignatureToPSBT({
-      psbt: signedTx,
-      inputIndex: 0,
-      signature,
-      pubkey: agent.xOnlyPubkey || compressedToXOnly(agent.publicKey),
-    });
+    for (let inputIndex = 0; inputIndex < numInputs; inputIndex++) {
+      signedTx = addSignatureToPSBT({
+        psbt: signedTx,
+        inputIndex,
+        signature,
+        pubkey: agent.xOnlyPubkey || compressedToXOnly(agent.publicKey),
+      });
+    }
     await repo.updateProposalStatus(proposalId, proposal.status, { signedTx });
   } catch (error) {
     console.error('Error adding signature to PSBT:', error);

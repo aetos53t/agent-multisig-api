@@ -215,6 +215,7 @@ app.onError((err, c) => {
 import { runMigrations } from './db';
 import confirmationService from './services/confirmation';
 import webhookQueueService from './services/webhookQueue';
+import expirationService from './services/expiration';
 
 const port = parseInt(process.env.PORT || '3000', 10);
 
@@ -226,6 +227,7 @@ runMigrations().then(async (success) => {
     // Start background services
     confirmationService.start();
     await webhookQueueService.start();
+    expirationService.start();
     
     console.log('🚀 Background services started');
   } else {
