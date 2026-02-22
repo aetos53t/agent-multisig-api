@@ -1,17 +1,23 @@
-import { mnemonicToSeedSync } from '@scure/bip39';
 import { HDKey } from '@scure/bip32';
-import { schnorr } from '@noble/secp256k1';
+import { mnemonicToSeedSync } from '@scure/bip39';
+import { schnorr } from '@noble/curves/secp256k1';
+import { hex } from '@scure/base';
 
 const mnemonic = "reflect please one paper slow excess retire advance just garment card vital mystery teach engine cable doll gate employ adjust decrease popular include another";
+const sighash = "b440b5a11d38ad00ce44872269b377ce7ad6b8e2fb8c3567eb4305aec720e501";
 
+// Derive key (BIP86 path for taproot)
 const seed = mnemonicToSeedSync(mnemonic);
 const root = HDKey.fromMasterSeed(seed);
-const child = root.derive("m/86'/0'/0'/0/0");
+const key = root.derive("m/86'/0'/0'/0/0");
 
-const sighash = "a804cc9c78241030384805b708b3b7c09dc31e245984c582756455633c439e03";
-const sighashBytes = Buffer.from(sighash, 'hex');
+const privateKey = key.privateKey!;
+const xOnlyPubkey = schnorr.getPublicKey(privateKey);
 
-const privateKey = child.privateKey!;
+console.log("x-only pubkey:", hex.encode(xOnlyPubkey));
+
+// Sign the sighash
+const sighashBytes = hex.decode(sighash);
 const signature = schnorr.sign(sighashBytes, privateKey);
 
-console.log(Buffer.from(signature).toString('hex'));
+console.log("signature:", hex.encode(signature));

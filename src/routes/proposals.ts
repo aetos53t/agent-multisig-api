@@ -360,10 +360,20 @@ router.post('/:id/sign', async (c) => {
     }, 404);
   }
   
-  if (proposal.status !== 'pending') {
+  // Check if agent already signed (do this BEFORE status check)
+  if (proposal.signatures.find(s => s.agentId === agentId)) {
     return c.json<ApiResponse<never>>({
       success: false,
-      error: { code: 'INVALID_STATUS', message: `Proposal is ${proposal.status}, not pending` },
+      error: { code: 'ALREADY_SIGNED', message: `Agent ${agentId} has already signed` },
+    }, 400);
+  }
+  
+  // Allow signing if agent hasn't signed yet, even if status is 'ready'
+  // (handles edge case where status got set prematurely)
+  if (proposal.status !== 'pending' && proposal.status !== 'ready') {
+    return c.json<ApiResponse<never>>({
+      success: false,
+      error: { code: 'INVALID_STATUS', message: `Proposal is ${proposal.status}, cannot sign` },
     }, 400);
   }
   
@@ -372,13 +382,6 @@ router.post('/:id/sign', async (c) => {
       success: false,
       error: { code: 'NOT_AUTHORIZED', message: `Agent ${agentId} is not a required signer` },
     }, 403);
-  }
-  
-  if (proposal.signatures.find(s => s.agentId === agentId)) {
-    return c.json<ApiResponse<never>>({
-      success: false,
-      error: { code: 'ALREADY_SIGNED', message: `Agent ${agentId} has already signed` },
-    }, 400);
   }
   
   const multisig = await repo.getMultisig(proposal.multisigId);
@@ -421,30 +424,43 @@ router.post('/:id/sign', async (c) => {
     console.error('Error adding signature to PSBT:', error);
   }
   
-  // Check threshold - re-fetch to get accurate signature count
-  // (in-memory store mutates same object reference)
+  // Re-fetch proposal to get accurate state
   const updatedProposal = await repo.getProposal(proposalId);
-  const newSigCount = updatedProposal?.signatures.length || 0;
-  if (newSigCount >= multisig.threshold) {
+  if (!updatedProposal) {
+    return c.json<ApiResponse<never>>({
+      success: false,
+      error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch updated proposal' },
+    }, 500);
+  }
+  
+  // Count signatures properly - dedupe by agentId
+  const uniqueSigners = new Set(updatedProposal.signatures.map(s => s.agentId));
+  const sigCount = uniqueSigners.size;
+  const thresholdMet = sigCount >= multisig.threshold;
+  
+  // Update status if threshold met
+  if (thresholdMet && updatedProposal.status === 'pending') {
     await repo.updateProposalStatus(proposalId, 'ready', { signedTx });
     
     // Notify agents that threshold is reached
-    webhooks.notifyThresholdReached(proposal, multisig).catch(err => {
+    webhooks.notifyThresholdReached(updatedProposal, multisig).catch(err => {
       console.error('Webhook delivery error:', err);
     });
   }
+  
+  // Calculate remaining signers from the fresh data
+  const signedAgentIds = new Set(updatedProposal.signatures.map(s => s.agentId));
+  const remainingSigners = updatedProposal.requiredSigners.filter(s => !signedAgentIds.has(s));
   
   return c.json<ApiResponse<any>>({
     success: true,
     data: {
       proposalId,
-      status: newSigCount >= multisig.threshold ? 'ready' : 'pending',
-      signatureCount: newSigCount,
+      status: thresholdMet ? 'ready' : 'pending',
+      signatureCount: sigCount,
       threshold: multisig.threshold,
-      thresholdMet: newSigCount >= multisig.threshold,
-      remainingSigners: proposal.requiredSigners.filter(
-        s => s !== agentId && !proposal.signatures.find(sig => sig.agentId === s)
-      ),
+      thresholdMet,
+      remainingSigners,
     },
   });
 });
