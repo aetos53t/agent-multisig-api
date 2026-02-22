@@ -184,11 +184,22 @@ app.onError((err, c) => {
 //                            SERVER
 // ═══════════════════════════════════════════════════════════════════
 
+import { runMigrations } from './db';
+
 const port = parseInt(process.env.PORT || '3000', 10);
+
+// Run migrations on startup
+runMigrations().then(success => {
+  if (success) {
+    console.log('📊 Database ready');
+  } else {
+    console.log('⚠️ Running in-memory mode (no database)');
+  }
+});
 
 console.log(`
 ╔═══════════════════════════════════════════════════════════════════╗
-║           Quorum API v0.1.0                               ║
+║           Quorum API v0.1.2                               ║
 ╠═══════════════════════════════════════════════════════════════════╣
 ║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(46)}║
 ║  Port: ${port.toString().padEnd(53)}║
@@ -200,5 +211,4 @@ export default {
   port,
   fetch: app.fetch,
 };
-// Force redeploy 1771538120
-// Redeploy 1771799523
+// Auto-migrate v0.1.2
