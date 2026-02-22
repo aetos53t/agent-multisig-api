@@ -12,6 +12,8 @@ import postgres from 'postgres';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
+console.log('🔍 DATABASE_URL check:', DATABASE_URL ? `set (${DATABASE_URL.substring(0, 20)}...)` : 'NOT SET');
+
 if (!DATABASE_URL) {
   console.warn('⚠️ DATABASE_URL not set, using in-memory storage');
 }
