@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agent Multisig API - Coordinate Anything</title>
+  <title>Quorum - Multi-Agent Wallet Coordination</title>
   <meta name="description" content="The universal coordination layer for multi-agent transactions. Bitcoin, EVM, Solana. Proven on mainnet.">
-  <meta property="og:title" content="Agent Multisig API">
+  <meta property="og:title" content="Quorum - Coordinate Anything">
   <meta property="og:description" content="Multi-agent wallet coordination. Never holds keys. Works with any provider.">
   <meta property="og:image" content="https://agent-multisig-api-production.up.railway.app/og.png">
   <meta name="twitter:card" content="summary_large_image">
@@ -23,13 +23,13 @@
       --text: #fafafa;
       --text-secondary: #a1a1aa;
       --text-muted: #71717a;
-      --accent: #10b981;
-      --accent-glow: rgba(16, 185, 129, 0.15);
-      --accent-dim: #059669;
+      --accent: #f59e0b;
+      --accent-glow: rgba(245, 158, 11, 0.15);
+      --accent-dim: #d97706;
       --purple: #8b5cf6;
       --blue: #3b82f6;
-      --orange: #f59e0b;
-      --gradient: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+      --green: #10b981;
+      --gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -47,15 +47,6 @@
     a { color: inherit; text-decoration: none; }
     
     .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-    
-    /* Glow effects */
-    .glow-line {
-      position: absolute;
-      height: 1px;
-      background: var(--gradient);
-      opacity: 0.5;
-      filter: blur(1px);
-    }
     
     /* Navigation */
     nav {
@@ -78,21 +69,23 @@
     
     .logo {
       font-weight: 700;
-      font-size: 18px;
+      font-size: 20px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
     
     .logo-icon {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       background: var(--gradient);
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
     }
     
     .nav-links {
@@ -167,18 +160,19 @@
       align-items: center;
       gap: 8px;
       background: var(--bg-card);
-      border: 1px solid var(--border);
+      border: 1px solid var(--accent-dim);
       padding: 8px 16px;
       border-radius: 100px;
       font-size: 13px;
-      color: var(--text-secondary);
+      color: var(--accent);
       margin-bottom: 32px;
+      font-weight: 500;
     }
     
     .badge-dot {
       width: 8px;
       height: 8px;
-      background: var(--accent);
+      background: var(--green);
       border-radius: 50%;
       animation: pulse 2s infinite;
     }
@@ -232,13 +226,13 @@
     }
     
     .btn-primary {
-      background: var(--text);
-      color: var(--bg);
+      background: var(--accent);
+      color: #000;
     }
     
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 30px rgba(245, 158, 11, 0.3);
     }
     
     .btn-secondary {
@@ -252,40 +246,52 @@
       background: var(--bg-elevated);
     }
     
-    /* Proof Banner */
+    /* Proof Cards */
+    .proof-cards {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
     .proof-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 20px 28px;
-      display: inline-flex;
+      padding: 16px 24px;
+      display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
     
     .proof-label {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
-      color: var(--accent);
+      font-size: 12px;
+      color: var(--green);
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     
-    .proof-label svg { width: 16px; height: 16px; }
+    .proof-label svg { width: 14px; height: 14px; }
     
     .proof-tx {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
       word-break: break-all;
-      max-width: 400px;
+      max-width: 280px;
     }
     
     .proof-tx:hover { color: var(--text-secondary); }
+    
+    .proof-block {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
     
     /* Chains */
     .chains {
@@ -318,6 +324,7 @@
       transition: opacity 0.2s;
     }
     
+    .chain.active { opacity: 1; }
     .chain:hover { opacity: 1; }
     
     .chain-icon {
@@ -332,10 +339,22 @@
       border: 1px solid var(--border);
     }
     
+    .chain.active .chain-icon {
+      border-color: var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    
     .chain-name {
       font-size: 13px;
       color: var(--text-secondary);
       font-weight: 500;
+    }
+    
+    .chain-status {
+      font-size: 10px;
+      color: var(--green);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     /* Features */
@@ -453,7 +472,7 @@
     .code-feature svg {
       width: 20px;
       height: 20px;
-      color: var(--accent);
+      color: var(--green);
     }
     
     .code-window {
@@ -522,18 +541,18 @@
     .code-content .property { color: #60a5fa; }
     .code-content .number { color: #fbbf24; }
     
-    /* SDKs */
-    .sdks {
+    /* Providers */
+    .providers {
       padding: 120px 0;
     }
     
-    .sdks-grid {
+    .providers-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
     }
     
-    .sdk-card {
+    .provider-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -542,28 +561,19 @@
       transition: all 0.2s;
     }
     
-    .sdk-card:hover {
+    .provider-card:hover {
       border-color: var(--text-muted);
     }
     
-    .sdk-icon {
-      font-size: 32px;
-      margin-bottom: 16px;
-    }
-    
-    .sdk-name {
+    .provider-name {
       font-weight: 600;
       font-size: 16px;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
     
-    .sdk-install {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
+    .provider-type {
+      font-size: 12px;
       color: var(--text-muted);
-      background: var(--bg);
-      padding: 8px 12px;
-      border-radius: 6px;
     }
     
     /* CTA */
@@ -628,22 +638,21 @@
       font-size: 14px;
     }
     
-    .footer-credit a { color: var(--text-secondary); }
-    
     /* Mobile */
     @media (max-width: 968px) {
       .nav-links { display: none; }
       .features-grid { grid-template-columns: 1fr; }
       .code-container { grid-template-columns: 1fr; }
-      .sdks-grid { grid-template-columns: repeat(2, 1fr); }
+      .providers-grid { grid-template-columns: repeat(2, 1fr); }
     }
     
     @media (max-width: 640px) {
       .hero h1 { font-size: 36px; }
       .hero-ctas { flex-direction: column; }
       .chains-grid { gap: 24px; }
-      .sdks-grid { grid-template-columns: 1fr; }
+      .providers-grid { grid-template-columns: 1fr; }
       .footer-content { flex-direction: column; gap: 24px; }
+      .proof-cards { flex-direction: column; align-items: center; }
     }
   </style>
 </head>
@@ -651,8 +660,8 @@
   <nav>
     <div class="container">
       <a href="/" class="logo">
-        <div class="logo-icon">⚡</div>
-        Agent Multisig
+        <div class="logo-icon">Q</div>
+        Quorum
       </a>
       <div class="nav-links">
         <a href="#features">Features</a>
@@ -672,12 +681,12 @@
       <div class="hero-content">
         <div class="badge">
           <span class="badge-dot"></span>
-          Proven on Bitcoin Mainnet
+          Live on Bitcoin Mainnet
         </div>
-        <h1>Coordinate <span>Anything</span></h1>
+        <h1><span>Quorum</span></h1>
         <p class="hero-subtitle">
-          The universal coordination layer for multi-agent transactions. 
-          Any chain. Any wallet provider. Never holds keys.
+          Multi-agent wallet coordination. Create shared treasuries, 
+          sign together, never give up your keys. Any chain. Any provider.
         </p>
         <div class="hero-ctas">
           <a href="/docs/QUICKSTART.md" class="btn btn-primary">
@@ -689,13 +698,22 @@
             View Source
           </a>
         </div>
-        <div class="proof-card">
-          <div class="proof-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Mainnet TX - Block 937432
-          </div>
-          <a href="https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4" target="_blank" class="proof-tx">
-            8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4
+        <div class="proof-cards">
+          <a href="https://mempool.space/tx/d05806c87ceae62e8f47daafb9fe4842c837fa3f333864cd5a5ec9d2a38cf96b" target="_blank" class="proof-card">
+            <div class="proof-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Aetos × Arc 2-of-2
+            </div>
+            <span class="proof-tx">d05806c87ceae62e8f...333864cd5a5ec9d2a38cf96b</span>
+            <span class="proof-block">Block 937849</span>
+          </a>
+          <a href="https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4" target="_blank" class="proof-card">
+            <div class="proof-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Genesis TX
+            </div>
+            <span class="proof-tx">8b3712476f38b1563c...d249f535f1d5f5f0125040d4</span>
+            <span class="proof-block">Block 937432</span>
           </a>
         </div>
       </div>
@@ -704,31 +722,32 @@
 
   <section class="chains">
     <div class="container">
-      <div class="chains-label">Multi-Chain Support</div>
+      <div class="chains-label">Multi-Chain Native</div>
       <div class="chains-grid">
-        <div class="chain">
+        <div class="chain active">
           <div class="chain-icon">₿</div>
           <span class="chain-name">Bitcoin</span>
+          <span class="chain-status">Taproot Live</span>
         </div>
         <div class="chain">
           <div class="chain-icon">◆</div>
           <span class="chain-name">Ethereum</span>
+          <span class="chain-status">Safe</span>
         </div>
         <div class="chain">
           <div class="chain-icon">🔵</div>
           <span class="chain-name">Base</span>
+          <span class="chain-status">Safe</span>
         </div>
         <div class="chain">
           <div class="chain-icon">◎</div>
           <span class="chain-name">Solana</span>
+          <span class="chain-status">Squads v4</span>
         </div>
         <div class="chain">
           <div class="chain-icon">Ⓢ</div>
           <span class="chain-name">Stacks</span>
-        </div>
-        <div class="chain">
-          <div class="chain-icon">+</div>
-          <span class="chain-name">More</span>
+          <span class="chain-status">Coming</span>
         </div>
       </div>
     </div>
@@ -749,12 +768,12 @@
         <div class="feature-card">
           <div class="feature-icon">🔌</div>
           <h3>Any Provider</h3>
-          <p>Works with aibtc, Claw Cash, AgentKit, Bankr, or any wallet that can sign. Plug in and coordinate.</p>
+          <p>Works with AIBTC, Claw Cash, Coinbase AgentKit, or any wallet that can sign. Plug and coordinate.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">⚡</div>
           <h3>M-of-N Flexible</h3>
-          <p>Any threshold configuration. 2-of-3 for teams, 3-of-5 for DAOs, 5-of-7 for enterprises.</p>
+          <p>Any threshold configuration. 2-of-2 for pairs, 2-of-3 for teams, 3-of-5 for DAOs.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">📜</div>
@@ -767,9 +786,9 @@
           <p>Bitcoin Taproot, EVM Safe, Solana Squads. Same API, same flow, different chains.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">🔔</div>
-          <h3>Webhooks & MCP</h3>
-          <p>Get notified when signatures are needed. MCP server for Claude, Cursor, and any AI agent.</p>
+          <div class="feature-icon">🤖</div>
+          <h3>MCP Server</h3>
+          <p>Drop-in integration for Claude, Cursor, OpenClaw. Your agent coordinates via natural language.</p>
         </div>
       </div>
     </div>
@@ -792,11 +811,7 @@
             </div>
             <div class="code-feature">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              MCP server for AI agents
-            </div>
-            <div class="code-feature">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              REST + Webhooks
+              REST + Webhooks + MCP
             </div>
           </div>
         </div>
@@ -812,55 +827,51 @@
             </div>
           </div>
           <div class="code-content">
-<pre><span class="keyword">import</span> { AgentMultisig } <span class="keyword">from</span> <span class="string">'agent-multisig'</span>
+<pre><span class="keyword">import</span> { Quorum } <span class="keyword">from</span> <span class="string">'@quorum/sdk'</span>
 
-<span class="keyword">const</span> client = <span class="keyword">new</span> <span class="function">AgentMultisig</span>()
+<span class="keyword">const</span> client = <span class="keyword">new</span> <span class="function">Quorum</span>()
 
-<span class="comment">// Create 2-of-3 multisig in one call</span>
-<span class="keyword">const</span> { multisig } = <span class="keyword">await</span> client.<span class="function">quickSetup</span>({
-  <span class="property">name</span>: <span class="string">'AI Treasury'</span>,
+<span class="comment">// Create 2-of-2 agent multisig</span>
+<span class="keyword">const</span> { multisig } = <span class="keyword">await</span> client.<span class="function">createMultisig</span>({
+  <span class="property">name</span>: <span class="string">'Agent Treasury'</span>,
   <span class="property">threshold</span>: <span class="number">2</span>,
-  <span class="property">signers</span>: [
-    { <span class="property">name</span>: <span class="string">'Agent-Alpha'</span>, <span class="property">publicKey</span>: <span class="string">'...'</span> },
-    { <span class="property">name</span>: <span class="string">'Agent-Beta'</span>, <span class="property">publicKey</span>: <span class="string">'...'</span> },
-    { <span class="property">name</span>: <span class="string">'Agent-Gamma'</span>, <span class="property">publicKey</span>: <span class="string">'...'</span> }
+  <span class="property">chain</span>: <span class="string">'bitcoin-mainnet'</span>,
+  <span class="property">agents</span>: [
+    { <span class="property">id</span>: <span class="string">'aetos'</span>, <span class="property">publicKey</span>: <span class="string">'2c0b05...'</span> },
+    { <span class="property">id</span>: <span class="string">'arc'</span>, <span class="property">publicKey</span>: <span class="string">'587de2...'</span> }
   ]
 })
 
 console.<span class="function">log</span>(multisig.<span class="property">address</span>) 
-<span class="comment">// bc1p... (Taproot) or 0x... (Safe)</span></pre>
+<span class="comment">// bc1p... (Taproot P2TR)</span></pre>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="sdks">
+  <section class="providers">
     <div class="container">
       <div class="section-header">
-        <h2>SDKs & Tools</h2>
-        <p>Every SDK has zero external dependencies. Just install and go.</p>
+        <h2>Works With Your Stack</h2>
+        <p>Quorum coordinates between any wallet providers. Your agents keep their keys.</p>
       </div>
-      <div class="sdks-grid">
-        <div class="sdk-card">
-          <div class="sdk-icon">📘</div>
-          <div class="sdk-name">TypeScript</div>
-          <div class="sdk-install">npm i agent-multisig</div>
+      <div class="providers-grid">
+        <div class="provider-card">
+          <div class="provider-name">AIBTC</div>
+          <div class="provider-type">Bitcoin + Stacks</div>
         </div>
-        <div class="sdk-card">
-          <div class="sdk-icon">🐍</div>
-          <div class="sdk-name">Python</div>
-          <div class="sdk-install">pip install agent-multisig</div>
+        <div class="provider-card">
+          <div class="provider-name">Claw Cash</div>
+          <div class="provider-type">Bitcoin + Ark</div>
         </div>
-        <div class="sdk-card">
-          <div class="sdk-icon">🔷</div>
-          <div class="sdk-name">Go</div>
-          <div class="sdk-install">go get github.com/aetos53t/...</div>
+        <div class="provider-card">
+          <div class="provider-name">Coinbase AgentKit</div>
+          <div class="provider-type">EVM Chains</div>
         </div>
-        <div class="sdk-card">
-          <div class="sdk-icon">🤖</div>
-          <div class="sdk-name">MCP Server</div>
-          <div class="sdk-install">npx agent-multisig-mcp</div>
+        <div class="provider-card">
+          <div class="provider-name">Custom Keys</div>
+          <div class="provider-type">Any BIP-340</div>
         </div>
       </div>
     </div>
