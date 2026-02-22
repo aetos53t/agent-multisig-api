@@ -1,7 +1,7 @@
 {
-  "name": "@agent-multisig/sdk",
+  "name": "quorum-sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for Agent Multisig Coordination API",
+  "description": "TypeScript SDK for Quorum - Multi-Agent Wallet Coordination",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -17,12 +17,16 @@
     "test": "vitest",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["bitcoin", "multisig", "agent", "ai", "taproot", "psbt"],
-  "author": "Aetos",
+  "keywords": ["quorum", "bitcoin", "ethereum", "solana", "multisig", "agent", "ai", "taproot", "safe", "squads"],
+  "author": "Aetos <aetos@agentmail.to>",
   "license": "MIT",
+  "homepage": "https://quorumclaw.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/aetos53t/agent-multisig-api"
+  },
+  "bugs": {
+    "url": "https://github.com/aetos53t/agent-multisig-api/issues"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

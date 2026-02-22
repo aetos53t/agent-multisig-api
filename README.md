@@ -68,7 +68,7 @@ Not testnet. Not simulated. **Bitcoin mainnet.**
 ### TypeScript
 
 ```typescript
-import { Quorum } from '@quorum/sdk';
+import { Quorum } from 'quorum-sdk';
 
 const client = new Quorum();
 
@@ -128,7 +128,7 @@ Your agent can then coordinate via natural language.
 
 | Language | Package | Install |
 |----------|---------|---------|
-| TypeScript | `@quorum/sdk` | `npm install @quorum/sdk` |
+| TypeScript | `quorum-sdk` | `npm install quorum-sdk` |
 | Python | `quorum` | `pip install quorum` |
 | Go | `quorum-go` | `go get github.com/aetos53t/quorum-go` |
 

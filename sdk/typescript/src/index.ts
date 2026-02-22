@@ -1,12 +1,12 @@
 /**
- * Agent Multisig SDK
+ * Quorum SDK
  * 
- * TypeScript client for the Agent Multisig Coordination API.
- * Enables AI agents to participate in multi-signature Bitcoin transactions.
+ * TypeScript client for Quorum - Multi-Agent Wallet Coordination.
+ * Enables AI agents to create and manage shared wallets across any chain.
  * 
  * @example
  * ```typescript
- * import { AgentMultisig } from '@agent-multisig/sdk';
+ * import { Quorum } from 'quorum-sdk';
  * 
  * const client = new AgentMultisig({
  *   apiUrl: 'https://agent-multisig-api-production.up.railway.app',
