@@ -46,6 +46,7 @@ const CreateProposalSchema = z.object({
   note: z.string().max(1000).optional(),
   expiresInSeconds: z.number().int().min(60).max(604800).optional(),
   allowUnconfirmed: z.boolean().optional(), // Allow mempool UTXOs (risky!)
+  autoBroadcast: z.boolean().optional(), // Auto-broadcast after threshold met
 });
 
 const SignProposalSchema = z.object({
@@ -57,6 +58,13 @@ const RejectProposalSchema = z.object({
   agentId: z.string().min(1).max(64),
   reason: z.string().max(500).optional(),
 });
+
+// ═══════════════════════════════════════════════════════════════════
+//                        AUTO-BROADCAST TRACKING
+// ═══════════════════════════════════════════════════════════════════
+
+// Track proposals that should auto-broadcast after finalization
+const autoBroadcastProposals = new Map<string, boolean>();
 
 // ═══════════════════════════════════════════════════════════════════
 //                            ROUTES
@@ -185,10 +193,27 @@ router.post('/', async (c) => {
     
     await repo.createProposal(proposal);
     
+    // Track auto-broadcast preference
+    if (input.autoBroadcast) {
+      autoBroadcastProposals.set(proposal.id, true);
+      console.log(`[Auto-Broadcast] Enabled for proposal ${proposal.id}`);
+    }
+    
     // Notify agents via webhooks (fire and forget)
     webhooks.notifyProposalCreated(proposal, multisig).catch(err => {
       console.error('Webhook delivery error:', err);
     });
+    
+    // Notify each required signer individually that their signature is needed
+    const agents = await repo.getAgentsForMultisig(multisig.id);
+    for (const signerAgentId of proposal.requiredSigners) {
+      const signerAgent = agents.find(a => a.id === signerAgentId);
+      if (signerAgent?.webhookUrl) {
+        webhooks.notifySignatureNeeded(signerAgent, proposal, multisig).catch(err => {
+          console.error(`Webhook error for ${signerAgentId}:`, err);
+        });
+      }
+    }
     
     return c.json<ApiResponse<Proposal & { sighashes: typeof psbtResult.sighashes }>>({
       success: true,
@@ -438,29 +463,102 @@ router.post('/:id/sign', async (c) => {
   const sigCount = uniqueSigners.size;
   const thresholdMet = sigCount >= multisig.threshold;
   
-  // Update status if threshold met
+  // Calculate remaining signers from the fresh data
+  const signedAgentIds = new Set(updatedProposal.signatures.map(s => s.agentId));
+  const remainingSigners = updatedProposal.requiredSigners.filter(s => !signedAgentIds.has(s));
+  
+  // Auto-finalize when threshold met
+  let finalStatus = updatedProposal.status;
+  let autoFinalized = false;
+  let txid: string | undefined;
+  let txHex: string | undefined;
+  
   if (thresholdMet && updatedProposal.status === 'pending') {
-    await repo.updateProposalStatus(proposalId, 'ready', { signedTx });
-    
     // Notify agents that threshold is reached
     webhooks.notifyThresholdReached(updatedProposal, multisig).catch(err => {
       console.error('Webhook delivery error:', err);
     });
+    
+    // Auto-finalize the transaction
+    try {
+      console.log(`[Auto-Finalize] Threshold met for proposal ${proposalId}, finalizing...`);
+      
+      const result = finalizePSBT(
+        signedTx,
+        multisig.bitcoin!,
+        updatedProposal.selectedLeafIndex || 0
+      );
+      
+      await repo.updateProposalStatus(proposalId, 'finalized', {
+        signedTx,
+        finalTx: result.txHex,
+        txid: result.txid,
+      });
+      
+      finalStatus = 'finalized';
+      autoFinalized = true;
+      txid = result.txid;
+      txHex = result.txHex;
+      
+      console.log(`[Auto-Finalize] ✓ Proposal ${proposalId} finalized: ${txid}`);
+      
+      // Auto-broadcast if enabled
+      if (autoBroadcastProposals.get(proposalId)) {
+        try {
+          console.log(`[Auto-Broadcast] Broadcasting ${proposalId}...`);
+          const broadcastTxid = await broadcastTransaction(result.txHex, multisig.chainId);
+          
+          await repo.updateProposalStatus(proposalId, 'broadcast', { txid: broadcastTxid });
+          finalStatus = 'broadcast';
+          txid = broadcastTxid;
+          
+          console.log(`[Auto-Broadcast] ✓ Transaction broadcast: ${broadcastTxid}`);
+          
+          // Notify agents of broadcast
+          webhooks.notifyBroadcast(updatedProposal, multisig, broadcastTxid).catch(err => {
+            console.error('Webhook delivery error:', err);
+          });
+          
+          // Clean up tracking
+          autoBroadcastProposals.delete(proposalId);
+        } catch (broadcastError) {
+          console.error(`[Auto-Broadcast] Failed for ${proposalId}:`, broadcastError);
+          // Still finalized, just not broadcast - user can manually broadcast
+        }
+      }
+    } catch (error) {
+      console.error(`[Auto-Finalize] Failed for ${proposalId}:`, error);
+      // Fall back to just setting ready status
+      await repo.updateProposalStatus(proposalId, 'ready', { signedTx });
+      finalStatus = 'ready';
+    }
   }
   
-  // Calculate remaining signers from the fresh data
-  const signedAgentIds = new Set(updatedProposal.signatures.map(s => s.agentId));
-  const remainingSigners = updatedProposal.requiredSigners.filter(s => !signedAgentIds.has(s));
+  // Notify remaining signers if not yet threshold
+  if (!thresholdMet && remainingSigners.length > 0) {
+    const agents = await repo.getAgentsForMultisig(multisig.id);
+    for (const remainingId of remainingSigners) {
+      const remainingAgent = agents.find(a => a.id === remainingId);
+      if (remainingAgent?.webhookUrl) {
+        webhooks.notifySignatureNeeded(remainingAgent, updatedProposal, multisig).catch(err => {
+          console.error(`Webhook error for ${remainingId}:`, err);
+        });
+      }
+    }
+  }
   
   return c.json<ApiResponse<any>>({
     success: true,
     data: {
       proposalId,
-      status: thresholdMet ? 'ready' : 'pending',
+      status: finalStatus,
       signatureCount: sigCount,
       threshold: multisig.threshold,
       thresholdMet,
       remainingSigners,
+      autoFinalized,
+      ...(txid && { txid }),
+      ...(txHex && { txHex }),
     },
   });
 });
