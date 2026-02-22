@@ -27,8 +27,15 @@ const RegisterAgentSchema = z.object({
   publicKey: z.string().min(64).max(130),
   provider: z.enum(['aibtc', 'agentkit', 'crossmint', 'clawcash', 'bankr', 'custom']),
   webhookUrl: z.string().url().optional(),
+  webhookSecret: z.string().min(16).max(256).optional(), // Required if webhookUrl is set
   metadata: z.record(z.unknown()).optional(),
-});
+}).refine(
+  (data) => !data.webhookUrl || data.webhookSecret,
+  {
+    message: 'webhookSecret is required when webhookUrl is provided',
+    path: ['webhookSecret'],
+  }
+);
 
 // ═══════════════════════════════════════════════════════════════════
 //                            ROUTES
@@ -77,6 +84,12 @@ router.post('/', async (c) => {
     // Not a valid compressed pubkey, might be already x-only or different format
   }
   
+  // Store webhook secret in metadata if provided
+  const metadata = { ...input.metadata };
+  if (input.webhookSecret) {
+    metadata.webhookSecret = input.webhookSecret;
+  }
+  
   const agent: Agent = {
     id: agentId,
     name: input.name,
@@ -84,16 +97,22 @@ router.post('/', async (c) => {
     xOnlyPubkey,
     provider: input.provider,
     webhookUrl: input.webhookUrl,
-    metadata: input.metadata,
+    metadata,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
   
   await repo.createAgent(agent);
   
-  return c.json<ApiResponse<Agent>>({
+  // Return agent (NOTE: webhook secret is in metadata for reference)
+  return c.json<ApiResponse<Agent & { _webhookSecretInfo?: string }>>({
     success: true,
-    data: agent,
+    data: {
+      ...agent,
+      _webhookSecretInfo: input.webhookSecret 
+        ? 'Webhook secret stored. Use X-Webhook-Signature header to verify.' 
+        : undefined,
+    },
   }, 201);
 });
 
