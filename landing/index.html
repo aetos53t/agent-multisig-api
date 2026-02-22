@@ -3,15 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quorum - Multi-Agent Wallet Coordination</title>
-  <meta name="description" content="The universal coordination layer for multi-agent transactions. Bitcoin, EVM, Solana. Proven on mainnet.">
-  <meta property="og:title" content="Quorum - Coordinate Anything">
-  <meta property="og:description" content="Multi-agent wallet coordination. Never holds keys. Works with any provider.">
-  <meta property="og:image" content="https://agent-multisig-api-production.up.railway.app/og.png">
-  <meta name="twitter:card" content="summary_large_image">
   
+  <!-- Primary Meta Tags -->
+  <title>Quorum - Multi-Agent Wallet Coordination</title>
+  <meta name="title" content="Quorum - Multi-Agent Wallet Coordination">
+  <meta name="description" content="The universal coordination layer for multi-agent transactions. Create shared treasuries, sign together, never give up your keys. Bitcoin, EVM, Solana.">
+  <meta name="keywords" content="multi-agent, multisig, bitcoin, taproot, AI agents, wallet coordination, treasury, MPC, threshold signatures">
+  <meta name="author" content="The House of Set">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://quorumapi.com">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://quorumapi.com">
+  <meta property="og:title" content="Quorum - Multi-Agent Wallet Coordination">
+  <meta property="og:description" content="Create shared treasuries for AI agents. Sign together, never give up your keys. Proven on Bitcoin mainnet.">
+  <meta property="og:image" content="https://quorumapi.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Quorum">
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://quorumapi.com">
+  <meta name="twitter:title" content="Quorum - Multi-Agent Wallet Coordination">
+  <meta name="twitter:description" content="Create shared treasuries for AI agents. Sign together, never give up your keys. Proven on Bitcoin mainnet.">
+  <meta name="twitter:image" content="https://quorumapi.com/og-image.png">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23f59e0b'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='%23000' font-family='system-ui' font-weight='bold'>Q</text></svg>">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="msapplication-TileColor" content="#050505">
+  
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Quorum",
+    "applicationCategory": "DeveloperApplication",
+    "description": "Multi-agent wallet coordination API for Bitcoin, Ethereum, and Solana",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "The House of Set"
+    }
+  }
+  </script>
   
   <style>
     :root {
@@ -26,14 +77,11 @@
       --accent: #f59e0b;
       --accent-glow: rgba(245, 158, 11, 0.15);
       --accent-dim: #d97706;
-      --purple: #8b5cf6;
-      --blue: #3b82f6;
       --green: #10b981;
       --gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
     html { scroll-behavior: smooth; }
     
     body { 
@@ -45,7 +93,6 @@
     }
     
     a { color: inherit; text-decoration: none; }
-    
     .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
     
     /* Navigation */
@@ -263,6 +310,11 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
+      transition: border-color 0.2s;
+    }
+    
+    .proof-card:hover {
+      border-color: var(--accent-dim);
     }
     
     .proof-label {
@@ -282,11 +334,7 @@
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       color: var(--text-muted);
-      word-break: break-all;
-      max-width: 280px;
     }
-    
-    .proof-tx:hover { color: var(--text-secondary); }
     
     .proof-block {
       font-size: 11px;
@@ -360,7 +408,6 @@
     /* Features */
     .features {
       padding: 120px 0;
-      position: relative;
     }
     
     .section-header {
@@ -396,7 +443,6 @@
     }
     
     .feature-card:hover {
-      border-color: var(--border);
       transform: translateY(-4px);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     }
@@ -445,7 +491,6 @@
       font-size: 36px;
       font-weight: 700;
       margin-bottom: 16px;
-      letter-spacing: -0.02em;
     }
     
     .code-info p {
@@ -495,32 +540,11 @@
       width: 12px;
       height: 12px;
       border-radius: 50%;
-      background: var(--border);
     }
     
     .code-dot:nth-child(1) { background: #ff5f57; }
     .code-dot:nth-child(2) { background: #febc2e; }
     .code-dot:nth-child(3) { background: #28c840; }
-    
-    .code-tabs {
-      display: flex;
-      margin-left: auto;
-      gap: 4px;
-    }
-    
-    .code-tab {
-      padding: 6px 12px;
-      font-size: 12px;
-      color: var(--text-muted);
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    
-    .code-tab.active {
-      background: var(--bg-elevated);
-      color: var(--text);
-    }
     
     .code-content {
       padding: 24px;
@@ -599,7 +623,6 @@
       font-size: 48px;
       font-weight: 700;
       margin-bottom: 16px;
-      letter-spacing: -0.02em;
     }
     
     .cta p {
@@ -704,7 +727,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               Aetos × Arc 2-of-2
             </div>
-            <span class="proof-tx">d05806c87ceae62e8f...333864cd5a5ec9d2a38cf96b</span>
+            <span class="proof-tx">d05806c8...a38cf96b</span>
             <span class="proof-block">Block 937849</span>
           </a>
           <a href="https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4" target="_blank" class="proof-card">
@@ -712,7 +735,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               Genesis TX
             </div>
-            <span class="proof-tx">8b3712476f38b1563c...d249f535f1d5f5f0125040d4</span>
+            <span class="proof-tx">8b371247...25040d4</span>
             <span class="proof-block">Block 937432</span>
           </a>
         </div>
@@ -807,7 +830,7 @@
             </div>
             <div class="code-feature">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              Zero dependencies
+              Zero external dependencies
             </div>
             <div class="code-feature">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -820,11 +843,6 @@
             <span class="code-dot"></span>
             <span class="code-dot"></span>
             <span class="code-dot"></span>
-            <div class="code-tabs">
-              <span class="code-tab active">typescript</span>
-              <span class="code-tab">python</span>
-              <span class="code-tab">curl</span>
-            </div>
           </div>
           <div class="code-content">
 <pre><span class="keyword">import</span> { Quorum } <span class="keyword">from</span> <span class="string">'@quorum/sdk'</span>
@@ -885,7 +903,7 @@ console.<span class="function">log</span>(multisig.<span class="property">addres
         <p>Start building multi-agent treasuries in minutes.</p>
         <div class="hero-ctas">
           <a href="/docs/QUICKSTART.md" class="btn btn-primary">Read the Docs</a>
-          <a href="https://agent-multisig-api-production.up.railway.app/health" class="btn btn-secondary">API Status ↗</a>
+          <a href="/health" class="btn btn-secondary">API Status ↗</a>
         </div>
       </div>
     </div>
@@ -900,7 +918,7 @@ console.<span class="function">log</span>(multisig.<span class="property">addres
           <a href="https://github.com/aetos53t/agent-multisig-api/issues">Issues</a>
         </div>
         <div class="footer-credit">
-          Built by <a href="https://github.com/houseof-set">The House of Set</a>
+          Built by <a href="https://x.com/AetosSET">Aetos</a> × <a href="https://github.com/houseof-set">House of Set</a>
         </div>
       </div>
     </div>

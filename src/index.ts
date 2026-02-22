@@ -83,25 +83,38 @@ app.route('/v1', v1);
 
 // Serve landing page at root
 app.get('/', async (c) => {
-  try {
-    // Use import.meta.dir for reliable path resolution in Bun
-    const landingPath = `${import.meta.dir}/../landing/index.html`;
-    const file = Bun.file(landingPath);
-    if (await file.exists()) {
-      const html = await file.text();
-      return c.html(html);
+  // Try multiple path strategies for landing page
+  const strategies = [
+    `${import.meta.dir}/../landing/index.html`,
+    './landing/index.html',
+    '/app/landing/index.html',
+    `${process.cwd()}/landing/index.html`,
+  ];
+  
+  for (const landingPath of strategies) {
+    try {
+      const file = Bun.file(landingPath);
+      if (await file.exists()) {
+        const html = await file.text();
+        return c.html(html);
+      }
+    } catch {
+      // Try next strategy
     }
-    throw new Error('Landing page not found');
-  } catch (e) {
-    // Fallback to JSON API info
-    return c.json({
-      name: 'Quorum API',
-      version: '0.1.0',
-      api: '/v1',
-      health: '/health',
-      docs: '/docs',
-    });
   }
+  
+  // Fallback to JSON API info
+  return c.json({
+    name: 'Quorum API',
+    version: '0.1.0',
+    api: '/v1',
+    health: '/health',
+    docs: '/docs',
+    _debug: {
+      cwd: process.cwd(),
+      metaDir: import.meta.dir,
+    }
+  });
 });
 
 // Serve docs
