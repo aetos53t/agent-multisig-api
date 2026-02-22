@@ -1,141 +1,154 @@
-# Agent Multisig Coordination API
+# Quorum
 
-Universal coordination layer for multi-agent wallets across chains.
+**The universal coordination layer for multi-agent wallets.**
 
-**Live API:** https://agent-multisig-api-production.up.railway.app
+Bitcoin. Ethereum. Solana. Same API, any chain.
 
-## ✅ Proven on Mainnet
+🌐 **Website:** [quorumclaw.com](https://quorumclaw.com)  
+📡 **Live API:** https://agent-multisig-api-production.up.railway.app
 
-Real 2-of-3 Bitcoin multisig transaction, confirmed in block 937432:
+---
 
-| Step | Transaction |
-|------|-------------|
-| **Fund** | [3222492b...](https://mempool.space/tx/3222492b560eb8b6898746ea11f3b4eed1dbf5fff21df75b581eea701edd0222) (20,000 sats) |
-| **Spend** | [8b371247...](https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4) (2-of-3 signed) |
+## What is Quorum?
 
-Not testnet. Not simulated. **Bitcoin mainnet.**
+AI agents need shared wallets. DAOs, treasuries, escrows — any time multiple agents control funds together. Quorum coordinates the signing process across different wallet providers and chains.
 
-## Why?
-
-AI agents need shared wallets. DAOs, treasuries, escrows - any time multiple agents need to control funds together. This API coordinates the signing process across different wallet providers and chains.
+**Non-custodial by design.** Private keys stay with your agents. Quorum coordinates signatures, never touches funds.
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Agent A   │     │   Agent B   │     │   Agent C   │
-│   (aibtc)   │     │ (clawcash)  │     │  (bankr)    │
+│   (aibtc)   │     │ (agentkit)  │     │  (squads)   │
 └──────┬──────┘     └──────┬──────┘     └──────┬──────┘
        │                   │                   │
        └───────────────────┼───────────────────┘
                            │
                     ┌──────▼──────┐
-                    │ Coordination │
-                    │     API      │
+                    │   Quorum    │
+                    │     API     │
                     └──────┬──────┘
                            │
-              ┌────────────┼────────────┐
-              │            │            │
-       ┌──────▼──────┐ ┌───▼───┐ ┌─────▼─────┐
-       │   Bitcoin   │ │  EVM  │ │  Stacks   │
-       │  (Taproot)  │ │(Safe) │ │  (soon)   │
-       └─────────────┘ └───────┘ └───────────┘
+         ┌─────────────────┼─────────────────┐
+         │                 │                 │
+  ┌──────▼──────┐   ┌──────▼──────┐   ┌──────▼──────┐
+  │   Bitcoin   │   │     EVM     │   │   Solana    │
+  │  (Taproot)  │   │   (Safe)    │   │  (Squads)   │
+  └─────────────┘   └─────────────┘   └─────────────┘
 ```
+
+---
+
+## Supported Chains
+
+| Chain | Implementation | Status |
+|-------|---------------|--------|
+| **Bitcoin** | Taproot P2TR | ✅ Production |
+| **Ethereum** | Safe (Gnosis) | ✅ Production |
+| **Base** | Safe | ✅ Production |
+| **Solana** | Squads v4 | ✅ Production |
+| **Stacks** | SIP-018 | 🔧 Coming |
+
+---
+
+## Proven on Mainnet
+
+Real 2-of-2 Bitcoin multisig spend, confirmed in block 937849:
+
+| Transaction | Details |
+|-------------|---------|
+| [d05806c8...](https://mempool.space/tx/d05806c87ceae62e8f47daafb9fe4842c837fa3f333864cd5a5ec9d2a38cf96b) | Aetos × Arc 2-of-2 spend • 10k sats output |
+| [8b371247...](https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4) | Genesis 2-of-3 transaction • Block 937432 |
+
+Not testnet. Not simulated. **Bitcoin mainnet.**
+
+---
 
 ## Quick Start
 
-### Option 1: SDK (Recommended)
+### TypeScript
 
-**TypeScript:**
 ```typescript
-import { AgentMultisig } from '@agent-multisig/sdk';
+import { Quorum } from '@quorum/sdk';
 
-const client = new AgentMultisig({
-  apiUrl: 'https://agent-multisig-api-production.up.railway.app'
-});
+const client = new Quorum();
 
-// Create 2-of-3 multisig with registered agents
-const { multisig, agents } = await client.quickSetup({
-  name: 'AI Treasury',
+// Same API works on any chain
+const { multisig } = await client.createMultisig({
+  name: 'Agent Treasury',
   threshold: 2,
-  signers: [
-    { name: 'TreasuryBot', provider: 'aibtc', publicKey: '...' },
-    { name: 'AuditBot', provider: 'aibtc', publicKey: '...' },
-    { name: 'BackupBot', provider: 'aibtc', publicKey: '...' },
+  chain: 'bitcoin-mainnet', // or 'ethereum', 'solana', 'base'
+  agents: [
+    { id: 'agent-1', publicKey: '...' },
+    { id: 'agent-2', publicKey: '...' }
   ]
 });
 
 console.log('Fund this address:', multisig.address);
+// bc1p... | 0x... | So... (depends on chain)
 ```
 
-**Python:**
+### Python
+
 ```python
-from agent_multisig import AgentMultisig
+from quorum import Quorum
 
-client = AgentMultisig(
-    api_url='https://agent-multisig-api-production.up.railway.app'
-)
+client = Quorum()
 
-result = client.quick_setup(
-    name='AI Treasury',
+result = client.create_multisig(
+    name='Agent Treasury',
     threshold=2,
-    signers=[
-        {'name': 'TreasuryBot', 'provider': 'aibtc', 'public_key': '...'},
-        {'name': 'AuditBot', 'provider': 'aibtc', 'public_key': '...'},
-        {'name': 'BackupBot', 'provider': 'aibtc', 'public_key': '...'},
+    chain='ethereum',  # or 'bitcoin-mainnet', 'solana', 'base'
+    agents=[
+        {'id': 'agent-1', 'public_key': '...'},
+        {'id': 'agent-2', 'public_key': '...'},
     ]
 )
 
 print(f"Fund this address: {result['multisig']['address']}")
 ```
 
-### Option 2: CLI
+### MCP Server (for Claude/OpenClaw)
 
-```bash
-# Install
-git clone https://github.com/aetos53t/agent-multisig-api
-cd agent-multisig-api/cli && npm install && npm run build && npm link
-
-# Use
-agent-multisig init          # Register your agent
-agent-multisig status        # Check API health
-agent-multisig list          # See pending proposals
-agent-multisig sign <id>     # Sign a proposal
-```
-
-### Option 3: MCP (for Claude agents)
-
-Add to Claude config:
 ```json
 {
   "mcpServers": {
-    "multisig": {
+    "quorum": {
       "command": "node",
-      "args": ["/path/to/agent-multisig-api/mcp-server/dist/cli.js"]
+      "args": ["/path/to/quorum/mcp-server/dist/cli.js"]
     }
   }
 }
 ```
 
-Available tools: `multisig_register`, `multisig_list_proposals`, `multisig_sign`
+Your agent can then coordinate via natural language.
+
+---
 
 ## SDKs
 
 | Language | Package | Install |
 |----------|---------|---------|
-| TypeScript | `@agent-multisig/sdk` | `npm install @agent-multisig/sdk` |
-| Python | `agent-multisig` | `pip install agent-multisig` |
+| TypeScript | `@quorum/sdk` | `npm install @quorum/sdk` |
+| Python | `quorum` | `pip install quorum` |
+| Go | `quorum-go` | `go get github.com/aetos53t/quorum-go` |
 
-Source: [sdk/typescript](./sdk/typescript), [sdk/python](./sdk/python)
+All SDKs: **zero external dependencies**, full TypeScript types, async/await.
 
-## Supported Chains & Providers
+---
 
-| Chain | Multisig Type | Providers | Status |
-|-------|--------------|-----------|--------|
-| Bitcoin | Taproot (P2TR) | aibtc, clawcash, custom | ✅ Proven |
-| Ethereum | Safe (Gnosis) | bankr, custom | ✅ Ready |
-| Base | Safe | bankr, custom | ✅ Ready |
-| Arbitrum | Safe | bankr, custom | ✅ Ready |
-| Stacks | SIP-018 | - | 🔧 Building |
-| Solana | Squads | - | 🔧 Building |
+## Wallet Providers
+
+Quorum works with any wallet that can sign:
+
+| Provider | Chains | Notes |
+|----------|--------|-------|
+| **AIBTC** | Bitcoin, Stacks | MCP integration |
+| **Claw Cash** | Bitcoin, Ark | Remote signing |
+| **Coinbase AgentKit** | EVM chains | CDP wallet |
+| **Squads** | Solana | Squads v4 SDK |
+| **Custom Keys** | Any | Raw BIP-340 / ECDSA |
+
+---
 
 ## API Reference
 
@@ -154,133 +167,79 @@ Base URL: `https://agent-multisig-api-production.up.railway.app`
 
 ### Endpoints
 
-```bash
-# Health
-GET /health
-
-# Agents
-POST /agents                    # Register agent
-GET /agents                     # List agents
-GET /agents/:id                 # Get agent
-
-# Multisigs
-POST /multisigs                 # Create multisig
-GET /multisigs                  # List multisigs
-GET /multisigs/:id              # Get multisig
-GET /multisigs/:id/balance      # Get balance + UTXOs
-
-# Proposals
-POST /proposals                 # Create proposal
-GET /proposals                  # List proposals
-GET /proposals/:id              # Get proposal
-POST /proposals/:id/sign        # Submit signature
-POST /proposals/:id/broadcast   # Broadcast when ready
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | API status |
+| POST | `/agents` | Register agent |
+| POST | `/multisigs` | Create multisig |
+| GET | `/multisigs/:id/balance` | Get balance + UTXOs |
+| POST | `/proposals` | Create spend proposal |
+| POST | `/proposals/:id/sign` | Submit signature |
+| POST | `/proposals/:id/broadcast` | Broadcast transaction |
 
 Full spec: [docs/openapi.yaml](./docs/openapi.yaml)
 
-## How the Signing Works
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  1. PROPOSAL CREATED                                    │
-│     - PSBT generated with all inputs/outputs           │
-│     - Signing digest computed                          │
-│     - Each agent gets their digest                     │
-└─────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│  2. AGENTS SIGN (in any order)                         │
-│     - Agent requests signing payload                   │
-│     - Agent's wallet signs the digest                  │
-│     - Schnorr signature submitted to API               │
-└─────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│  3. THRESHOLD MET                                       │
-│     - API detects enough signatures                    │
-│     - Witnesses assembled                              │
-│     - Transaction finalized                            │
-└─────────────────────────────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│  4. BROADCAST                                           │
-│     - Raw transaction sent to network                  │
-│     - txid returned                                    │
-│     - Confirmed in ~10 minutes                         │
-└─────────────────────────────────────────────────────────┘
-```
+---
 
 ## Security
 
-- **No private keys** - We never see or store private keys
-- **Digest signing** - Agents sign digests, not raw transactions
-- **PSBT validation** - Full transaction visible before signing
-- **Threshold enforcement** - Can't finalize without enough signatures
-- **Taproot privacy** - Script not revealed until spending
+- **Non-custodial** — Private keys never leave your agents
+- **Full visibility** — Agents see exactly what they're signing (PSBT, typed data)
+- **Threshold enforcement** — Can't finalize without required signatures
+- **No blind signing** — Transaction details always visible
 
-See [PSBT_COORDINATION_SPEC.md](./PSBT_COORDINATION_SPEC.md) for security model.
+See [SECURITY.md](./SECURITY.md) for the full security model.
+
+---
 
 ## Development
 
 ```bash
-# Clone
 git clone https://github.com/aetos53t/agent-multisig-api
 cd agent-multisig-api
 
-# Install (using bun or npm)
 bun install
-
-# Run (in-memory mode)
-bun run dev
-
-# Run with Postgres
-export DATABASE_URL="postgres://..."
-bun run dev
-
-# Test (72 passing)
-bun test
+bun run dev        # In-memory mode
+bun test           # 73/74 tests passing
 ```
+
+---
 
 ## Architecture
 
 ```
-agent-multisig-api/
+quorum/
 ├── src/
 │   ├── adapters/       # Chain implementations
-│   │   ├── aibtc.ts    # aibtc MCP
-│   │   ├── clawcash.ts # Claw Cash
-│   │   ├── bankr.ts    # Bankr (EVM)
-│   │   └── evm-safe.ts # Safe SDK
+│   │   ├── aibtc.ts    # Bitcoin (AIBTC)
+│   │   ├── evm-safe.ts # EVM (Safe)
+│   │   └── solana-squads.ts  # Solana (Squads v4)
 │   ├── services/
 │   │   ├── psbt.ts     # Bitcoin PSBT
 │   │   └── taproot.ts  # Taproot addresses
-│   ├── routes/         # API endpoints
-│   └── db/             # PostgreSQL
+│   └── routes/         # API endpoints
 ├── sdk/
-│   ├── typescript/     # TS/JS SDK
-│   └── python/         # Python SDK
-├── cli/                # CLI tool
-├── mcp-server/         # Claude MCP
-├── examples/           # Working code
+│   ├── typescript/     # TS SDK (zero-dep)
+│   ├── python/         # Python SDK (zero-dep)
+│   └── go/             # Go SDK (zero-dep)
+├── mcp-server/         # Claude/OpenClaw MCP
 └── docs/               # OpenAPI + guides
 ```
 
+---
+
 ## Status
 
-- ✅ **Mainnet proven** - Real transaction confirmed
-- ✅ Bitcoin Taproot (P2TR) 
-- ✅ EVM Safe multisig
-- ✅ TypeScript SDK
-- ✅ Python SDK
-- ✅ CLI + MCP
-- ✅ 72/72 tests passing
-- ⏳ npm/pip publish (auth pending)
+- ✅ Bitcoin Taproot (mainnet proven)
+- ✅ EVM Safe (Ethereum, Base, Arbitrum)
+- ✅ Solana Squads v4
+- ✅ TypeScript, Python, Go SDKs
+- ✅ MCP Server
+- ✅ 73/74 tests passing
 - ⏳ Stacks adapter
-- ⏳ Solana adapter
+- ⏳ npm/pip publish
+
+---
 
 ## License
 

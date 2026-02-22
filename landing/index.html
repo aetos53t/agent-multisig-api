@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
   <!-- Primary Meta Tags -->
-  <title>Quorum - Multi-Agent Wallet Coordination</title>
-  <meta name="title" content="Quorum - Multi-Agent Wallet Coordination">
-  <meta name="description" content="The universal coordination layer for multi-agent transactions. Create shared treasuries, sign together, never give up your keys. Bitcoin, EVM, Solana.">
-  <meta name="keywords" content="multi-agent, multisig, bitcoin, taproot, AI agents, wallet coordination, treasury, MPC, threshold signatures">
+  <title>Quorum - Multi-Agent Wallet Coordination Across All Chains</title>
+  <meta name="title" content="Quorum - Multi-Agent Wallet Coordination Across All Chains">
+  <meta name="description" content="The universal coordination layer for multi-agent wallets. Bitcoin, Ethereum, Solana, Base - any chain, any provider. Create shared treasuries, sign together, never give up your keys.">
+  <meta name="keywords" content="multi-agent, multisig, bitcoin, ethereum, solana, taproot, safe, squads, AI agents, wallet coordination, treasury, cross-chain, multi-chain">
   <meta name="author" content="The House of Set">
   <meta name="robots" content="index, follow">
   <link rel="canonical" href="https://quorumclaw.com">
@@ -16,8 +16,8 @@
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://quorumclaw.com">
-  <meta property="og:title" content="Quorum - Multi-Agent Wallet Coordination">
-  <meta property="og:description" content="Create shared treasuries for AI agents. Sign together, never give up your keys. Proven on Bitcoin mainnet.">
+  <meta property="og:title" content="Quorum - Multi-Agent Wallet Coordination Across All Chains">
+  <meta property="og:description" content="The universal coordination layer for AI agent wallets. Bitcoin Taproot, EVM Safe, Solana Squads - same API, any chain. Non-custodial by design.">
   <meta property="og:image" content="https://quorumclaw.com/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -26,16 +26,16 @@
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="https://quorumclaw.com">
-  <meta name="twitter:title" content="Quorum - Multi-Agent Wallet Coordination">
-  <meta name="twitter:description" content="Create shared treasuries for AI agents. Sign together, never give up your keys. Proven on Bitcoin mainnet.">
+  <meta name="twitter:title" content="Quorum - Multi-Agent Wallet Coordination Across All Chains">
+  <meta name="twitter:description" content="The universal coordination layer for AI agent wallets. Bitcoin Taproot, EVM Safe, Solana Squads - same API, any chain.">
   <meta name="twitter:image" content="https://quorumclaw.com/og-image.png">
   
   <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23f59e0b'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='%23000' font-family='system-ui' font-weight='bold'>Q</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ec4899'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='%23fff' font-family='system-ui' font-weight='bold'>Q</text></svg>">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <meta name="theme-color" content="#f59e0b">
+  <meta name="theme-color" content="#ec4899">
   <meta name="msapplication-TileColor" content="#050505">
   
   <!-- Fonts -->
@@ -50,7 +50,7 @@
     "@type": "SoftwareApplication",
     "name": "Quorum",
     "applicationCategory": "DeveloperApplication",
-    "description": "Multi-agent wallet coordination API for Bitcoin, Ethereum, and Solana",
+    "description": "Multi-agent wallet coordination API across all chains - Bitcoin, Ethereum, Solana, and more",
     "operatingSystem": "Any",
     "offers": {
       "@type": "Offer",
@@ -74,11 +74,12 @@
       --text: #fafafa;
       --text-secondary: #a1a1aa;
       --text-muted: #71717a;
-      --accent: #f59e0b;
-      --accent-glow: rgba(245, 158, 11, 0.15);
-      --accent-dim: #d97706;
+      --accent: #ec4899;
+      --accent-light: #f472b6;
+      --accent-glow: rgba(236, 72, 153, 0.15);
+      --accent-dim: #db2777;
       --green: #10b981;
-      --gradient: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ef4444 100%);
+      --gradient: linear-gradient(135deg, #ec4899 0%, #f472b6 50%, #a855f7 100%);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -132,7 +133,7 @@
       justify-content: center;
       font-size: 16px;
       font-weight: 700;
-      color: #000;
+      color: #fff;
     }
     
     .nav-links {
@@ -247,9 +248,13 @@
     .hero-subtitle {
       font-size: 20px;
       color: var(--text-secondary);
-      max-width: 600px;
+      max-width: 650px;
       margin: 0 auto 48px;
       line-height: 1.6;
+    }
+    
+    .hero-subtitle strong {
+      color: var(--text);
     }
     
     .hero-ctas {
@@ -274,12 +279,12 @@
     
     .btn-primary {
       background: var(--accent);
-      color: #000;
+      color: #fff;
     }
     
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(245, 158, 11, 0.3);
+      box-shadow: 0 8px 30px rgba(236, 72, 153, 0.4);
     }
     
     .btn-secondary {
@@ -368,11 +373,11 @@
       flex-direction: column;
       align-items: center;
       gap: 12px;
-      opacity: 0.6;
+      opacity: 0.5;
       transition: opacity 0.2s;
     }
     
-    .chain.active { opacity: 1; }
+    .chain.live { opacity: 1; }
     .chain:hover { opacity: 1; }
     
     .chain-icon {
@@ -387,7 +392,7 @@
       border: 1px solid var(--border);
     }
     
-    .chain.active .chain-icon {
+    .chain.live .chain-icon {
       border-color: var(--accent);
       box-shadow: 0 0 20px var(--accent-glow);
     }
@@ -400,10 +405,12 @@
     
     .chain-status {
       font-size: 10px;
-      color: var(--green);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+    
+    .chain-status.production { color: var(--green); }
+    .chain-status.coming { color: var(--text-muted); }
     
     /* Features */
     .features {
@@ -412,7 +419,7 @@
     
     .section-header {
       text-align: center;
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto 64px;
     }
     
@@ -445,6 +452,7 @@
     .feature-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border-color: var(--accent-dim);
     }
     
     .feature-icon {
@@ -517,7 +525,7 @@
     .code-feature svg {
       width: 20px;
       height: 20px;
-      color: var(--green);
+      color: var(--accent);
     }
     
     .code-window {
@@ -559,11 +567,11 @@
     }
     
     .code-content .comment { color: #6b7280; }
-    .code-content .keyword { color: #f472b6; }
+    .code-content .keyword { color: #ec4899; }
     .code-content .string { color: #34d399; }
     .code-content .function { color: #a78bfa; }
     .code-content .property { color: #60a5fa; }
-    .code-content .number { color: #fbbf24; }
+    .code-content .number { color: #f472b6; }
     
     /* Providers */
     .providers {
@@ -586,7 +594,7 @@
     }
     
     .provider-card:hover {
-      border-color: var(--text-muted);
+      border-color: var(--accent-dim);
     }
     
     .provider-name {
@@ -654,11 +662,15 @@
       transition: color 0.2s;
     }
     
-    .footer-links a:hover { color: var(--text); }
+    .footer-links a:hover { color: var(--accent); }
     
     .footer-credit {
       color: var(--text-muted);
       font-size: 14px;
+    }
+    
+    .footer-credit a:hover {
+      color: var(--accent);
     }
     
     /* Mobile */
@@ -678,6 +690,8 @@
       .proof-cards { flex-direction: column; align-items: center; }
     }
   </style>
+  <!-- Plausible Analytics -->
+  <script defer data-domain="quorumclaw.com" src="https://plausible.io/js/script.js"></script>
 </head>
 <body>
   <nav>
@@ -704,12 +718,13 @@
       <div class="hero-content">
         <div class="badge">
           <span class="badge-dot"></span>
-          Live on Bitcoin Mainnet
+          Live in Production
         </div>
         <h1><span>Quorum</span></h1>
         <p class="hero-subtitle">
-          Multi-agent wallet coordination. Create shared treasuries, 
-          sign together, never give up your keys. Any chain. Any provider.
+          The universal coordination layer for multi-agent wallets. 
+          <strong>Bitcoin, Ethereum, Solana</strong> — same API, any chain. 
+          Sign together, never give up your keys.
         </p>
         <div class="hero-ctas">
           <a href="/docs/QUICKSTART.md" class="btn btn-primary">
@@ -725,18 +740,10 @@
           <a href="https://mempool.space/tx/d05806c87ceae62e8f47daafb9fe4842c837fa3f333864cd5a5ec9d2a38cf96b" target="_blank" class="proof-card">
             <div class="proof-label">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              Aetos × Arc 2-of-2
+              Bitcoin Mainnet Proof
             </div>
             <span class="proof-tx">d05806c8...a38cf96b</span>
-            <span class="proof-block">Block 937849</span>
-          </a>
-          <a href="https://mempool.space/tx/8b3712476f38b1563ce1b7b8f521ea4ee2fec1fdd249f535f1d5f5f0125040d4" target="_blank" class="proof-card">
-            <div class="proof-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              Genesis TX
-            </div>
-            <span class="proof-tx">8b371247...25040d4</span>
-            <span class="proof-block">Block 937432</span>
+            <span class="proof-block">Block 937849 • 2-of-2 Spend</span>
           </a>
         </div>
       </div>
@@ -745,32 +752,32 @@
 
   <section class="chains">
     <div class="container">
-      <div class="chains-label">Multi-Chain Native</div>
+      <div class="chains-label">One API. Every Chain.</div>
       <div class="chains-grid">
-        <div class="chain active">
+        <div class="chain live">
           <div class="chain-icon">₿</div>
           <span class="chain-name">Bitcoin</span>
-          <span class="chain-status">Taproot Live</span>
+          <span class="chain-status production">Taproot • Live</span>
         </div>
-        <div class="chain">
+        <div class="chain live">
           <div class="chain-icon">◆</div>
           <span class="chain-name">Ethereum</span>
-          <span class="chain-status">Safe</span>
+          <span class="chain-status production">Safe • Live</span>
         </div>
-        <div class="chain">
+        <div class="chain live">
           <div class="chain-icon">🔵</div>
           <span class="chain-name">Base</span>
-          <span class="chain-status">Safe</span>
+          <span class="chain-status production">Safe • Live</span>
         </div>
-        <div class="chain">
+        <div class="chain live">
           <div class="chain-icon">◎</div>
           <span class="chain-name">Solana</span>
-          <span class="chain-status">Squads v4</span>
+          <span class="chain-status production">Squads v4 • Live</span>
         </div>
         <div class="chain">
           <div class="chain-icon">Ⓢ</div>
           <span class="chain-name">Stacks</span>
-          <span class="chain-status">Coming</span>
+          <span class="chain-status coming">Coming Soon</span>
         </div>
       </div>
     </div>
@@ -780,38 +787,38 @@
     <div class="container">
       <div class="section-header">
         <h2>Built for AI Agents</h2>
-        <p>The missing coordination layer between agent wallets. Any provider, any chain, any threshold.</p>
+        <p>The missing coordination layer between agent wallets across any chain. Your agents keep their keys. Quorum handles the rest.</p>
       </div>
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon">🔐</div>
-          <h3>Never Holds Keys</h3>
-          <p>Private keys stay with agents. We coordinate signatures, never custody funds. Non-custodial by design.</p>
+          <h3>Non-Custodial</h3>
+          <p>Private keys stay with your agents. Quorum coordinates signatures, never touches funds. Zero custody risk.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌐</div>
+          <h3>Any Chain</h3>
+          <p>Bitcoin Taproot, EVM Safe, Solana Squads — same simple API. Add new chains without changing your code.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🔌</div>
           <h3>Any Provider</h3>
-          <p>Works with AIBTC, Claw Cash, Coinbase AgentKit, or any wallet that can sign. Plug and coordinate.</p>
+          <p>Works with AIBTC, Claw Cash, Coinbase AgentKit, Bankr, or raw keypairs. Bring your own wallet.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">⚡</div>
           <h3>M-of-N Flexible</h3>
-          <p>Any threshold configuration. 2-of-2 for pairs, 2-of-3 for teams, 3-of-5 for DAOs.</p>
+          <p>Any threshold configuration. 2-of-2 for pairs, 2-of-3 for redundancy, 3-of-5 for DAOs. You choose.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">📜</div>
-          <h3>PSBT Native</h3>
-          <p>Full transaction visibility. Agents see exactly what they're signing. No blind signing.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon">🌐</div>
-          <h3>Multi-Chain</h3>
-          <p>Bitcoin Taproot, EVM Safe, Solana Squads. Same API, same flow, different chains.</p>
+          <h3>Full Visibility</h3>
+          <p>Agents see exactly what they're signing. PSBT for Bitcoin, typed data for EVM. No blind signing ever.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">🤖</div>
-          <h3>MCP Server</h3>
-          <p>Drop-in integration for Claude, Cursor, OpenClaw. Your agent coordinates via natural language.</p>
+          <h3>MCP Ready</h3>
+          <p>Drop-in integration for Claude, Cursor, OpenClaw. Natural language coordination out of the box.</p>
         </div>
       </div>
     </div>
@@ -822,7 +829,7 @@
       <div class="code-container">
         <div class="code-info">
           <h2>Five Lines to Coordinate</h2>
-          <p>Create a multi-agent multisig in seconds. Register agents, set threshold, get an address. Fund it, sign together, execute.</p>
+          <p>Create a multi-agent multisig in seconds. Register agents, set threshold, pick your chain. Fund it, sign together, execute. Same flow everywhere.</p>
           <div class="code-features">
             <div class="code-feature">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -849,19 +856,19 @@
 
 <span class="keyword">const</span> client = <span class="keyword">new</span> <span class="function">Quorum</span>()
 
-<span class="comment">// Create 2-of-2 agent multisig</span>
+<span class="comment">// Works the same on any chain</span>
 <span class="keyword">const</span> { multisig } = <span class="keyword">await</span> client.<span class="function">createMultisig</span>({
   <span class="property">name</span>: <span class="string">'Agent Treasury'</span>,
   <span class="property">threshold</span>: <span class="number">2</span>,
-  <span class="property">chain</span>: <span class="string">'bitcoin-mainnet'</span>,
+  <span class="property">chain</span>: <span class="string">'bitcoin-mainnet'</span>, <span class="comment">// or 'ethereum', 'solana', 'base'</span>
   <span class="property">agents</span>: [
-    { <span class="property">id</span>: <span class="string">'aetos'</span>, <span class="property">publicKey</span>: <span class="string">'2c0b05...'</span> },
-    { <span class="property">id</span>: <span class="string">'arc'</span>, <span class="property">publicKey</span>: <span class="string">'587de2...'</span> }
+    { <span class="property">id</span>: <span class="string">'agent-1'</span>, <span class="property">publicKey</span>: <span class="string">'...'</span> },
+    { <span class="property">id</span>: <span class="string">'agent-2'</span>, <span class="property">publicKey</span>: <span class="string">'...'</span> }
   ]
 })
 
 console.<span class="function">log</span>(multisig.<span class="property">address</span>) 
-<span class="comment">// bc1p... (Taproot P2TR)</span></pre>
+<span class="comment">// bc1p... | 0x... | So... (depends on chain)</span></pre>
           </div>
         </div>
       </div>
@@ -872,7 +879,7 @@ console.<span class="function">log</span>(multisig.<span class="property">addres
     <div class="container">
       <div class="section-header">
         <h2>Works With Your Stack</h2>
-        <p>Quorum coordinates between any wallet providers. Your agents keep their keys.</p>
+        <p>Quorum coordinates between any wallet providers across any chain. Your agents keep their keys.</p>
       </div>
       <div class="providers-grid">
         <div class="provider-card">
@@ -888,8 +895,8 @@ console.<span class="function">log</span>(multisig.<span class="property">addres
           <div class="provider-type">EVM Chains</div>
         </div>
         <div class="provider-card">
-          <div class="provider-name">Custom Keys</div>
-          <div class="provider-type">Any BIP-340</div>
+          <div class="provider-name">Squads</div>
+          <div class="provider-type">Solana</div>
         </div>
       </div>
     </div>
@@ -900,7 +907,7 @@ console.<span class="function">log</span>(multisig.<span class="property">addres
     <div class="container">
       <div class="cta-content">
         <h2>Ready to Coordinate?</h2>
-        <p>Start building multi-agent treasuries in minutes.</p>
+        <p>Start building multi-agent treasuries across any chain in minutes.</p>
         <div class="hero-ctas">
           <a href="/docs/QUICKSTART.md" class="btn btn-primary">Read the Docs</a>
           <a href="/health" class="btn btn-secondary">API Status ↗</a>
