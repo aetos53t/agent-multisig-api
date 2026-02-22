@@ -5,6 +5,8 @@
 import { Hono } from 'hono';
 import { checkConnection, runMigrations } from '../db';
 import repo from '../db/repository';
+import confirmationService from '../services/confirmation';
+import webhookQueueService from '../services/webhookQueue';
 
 const router = new Hono();
 
@@ -21,20 +23,25 @@ router.get('/', async (c) => {
   
   const dbConnected = await checkConnection();
   const stats = await repo.getStats();
+  const webhookStats = await webhookQueueService.stats();
+  const confirmationStatus = confirmationService.status();
   
   return c.json({
     status: dbConnected ? 'healthy' : 'degraded',
     timestamp: new Date().toISOString(),
-    version: '0.1.2',
+    version: '0.2.0',
     storage: stats.usingDatabase ? 'postgresql' : 'in-memory',
     checks: {
       database: dbConnected ? 'ok' : 'not-connected',
       migrations: migrationSuccess ? 'ok' : 'pending',
+      confirmationTracking: confirmationStatus.running ? 'running' : 'stopped',
+      webhookQueue: webhookStats.pending > 0 ? `${webhookStats.pending} pending` : 'ok',
     },
     stats: {
       agents: stats.agents,
       multisigs: stats.multisigs,
       proposals: stats.proposals,
+      webhooks: webhookStats,
     },
   });
 });

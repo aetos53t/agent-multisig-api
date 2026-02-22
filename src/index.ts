@@ -117,6 +117,34 @@ app.get('/', async (c) => {
   });
 });
 
+// Serve dashboard
+app.get('/dashboard', async (c) => {
+  try {
+    const strategies = [
+      `${import.meta.dir}/../dashboard/index.html`,
+      './dashboard/index.html',
+      '/app/dashboard/index.html',
+      `${process.cwd()}/dashboard/index.html`,
+    ];
+    
+    for (const dashPath of strategies) {
+      try {
+        const file = Bun.file(dashPath);
+        if (await file.exists()) {
+          const html = await file.text();
+          return c.html(html);
+        }
+      } catch {
+        // Try next strategy
+      }
+    }
+    
+    throw new Error('Dashboard not found');
+  } catch {
+    return c.redirect('/');
+  }
+});
+
 // Serve docs
 app.get('/docs', async (c) => {
   try {
@@ -185,15 +213,23 @@ app.onError((err, c) => {
 // ═══════════════════════════════════════════════════════════════════
 
 import { runMigrations } from './db';
+import confirmationService from './services/confirmation';
+import webhookQueueService from './services/webhookQueue';
 
 const port = parseInt(process.env.PORT || '3000', 10);
 
-// Run migrations on startup
-runMigrations().then(success => {
+// Run migrations and start background services
+runMigrations().then(async (success) => {
   if (success) {
     console.log('📊 Database ready');
+    
+    // Start background services
+    confirmationService.start();
+    await webhookQueueService.start();
+    
+    console.log('🚀 Background services started');
   } else {
-    console.log('⚠️ Running in-memory mode (no database)');
+    console.log('⚠️ Running in-memory mode (no database, no background services)');
   }
 });
 

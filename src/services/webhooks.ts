@@ -11,6 +11,7 @@
 import { createHmac } from 'crypto';
 import type { Agent, Proposal, Multisig } from '../types';
 import repo from '../db/repository';
+import webhookQueue from './webhookQueue';
 
 export type WebhookEvent = 
   | 'proposal.created'
@@ -114,10 +115,22 @@ async function deliverToAgent(
     const error = `HTTP ${response.status}`;
     console.log(`[Webhook] ✗ ${agent.id}: ${error}`);
 
-    // Retry on 5xx errors
+    // Retry on 5xx errors (immediate retries)
     if (response.status >= 500 && attempt < MAX_RETRIES) {
       await sleep(RETRY_DELAYS[attempt] || 30000);
       return deliverToAgent(agent, payload, attempt + 1);
+    }
+
+    // Queue for persistent retry if all immediate retries failed
+    if (attempt >= MAX_RETRIES - 1) {
+      webhookQueue.enqueue({
+        agentId: agent.id,
+        webhookUrl: agent.webhookUrl,
+        webhookSecret: (agent.metadata?.webhookSecret as string) || undefined,
+        event: payload.event,
+        payload: payload as any,
+        error,
+      }).catch(e => console.error('[Webhook] Queue error:', e));
     }
 
     return {
@@ -135,11 +148,21 @@ async function deliverToAgent(
     
     console.log(`[Webhook] ✗ ${agent.id}: ${error}`);
 
-    // Retry on network errors
+    // Retry on network errors (immediate retries)
     if (attempt < MAX_RETRIES) {
       await sleep(RETRY_DELAYS[attempt] || 30000);
       return deliverToAgent(agent, payload, attempt + 1);
     }
+
+    // Queue for persistent retry if all immediate retries failed
+    webhookQueue.enqueue({
+      agentId: agent.id,
+      webhookUrl: agent.webhookUrl,
+      webhookSecret: (agent.metadata?.webhookSecret as string) || undefined,
+      event: payload.event,
+      payload: payload as any,
+      error,
+    }).catch(e => console.error('[Webhook] Queue error:', e));
 
     return {
       agentId: agent.id,

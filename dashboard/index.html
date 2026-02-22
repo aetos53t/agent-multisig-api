@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quorum Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #0a0a0a;
+      --card: #111;
+      --border: #222;
+      --text: #fff;
+      --text-muted: #888;
+      --pink: #ec4899;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    h1 span { color: var(--pink); }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .status-badge.healthy {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--green);
+    }
+    
+    .status-badge.degraded {
+      background: rgba(234, 179, 8, 0.15);
+      color: var(--yellow);
+    }
+    
+    .status-badge::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    
+    .card h2 {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--pink);
+    }
+    
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    
+    .stats-row {
+      display: flex;
+      gap: 24px;
+    }
+    
+    .stats-row .stat {
+      font-size: 24px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    
+    th {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      font-weight: 500;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    tr:hover {
+      background: rgba(255,255,255,0.02);
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .badge.pending { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
+    .badge.ready { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .badge.finalized { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+    .badge.broadcast { background: rgba(236, 72, 153, 0.15); color: var(--pink); }
+    .badge.confirmed { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+    .badge.rejected, .badge.expired { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+    
+    .mono {
+      font-family: 'SF Mono', Consolas, monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    .truncate {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .empty {
+      text-align: center;
+      padding: 48px;
+      color: var(--text-muted);
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .tab {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .tab:hover { border-color: var(--pink); color: var(--text); }
+    .tab.active { background: var(--pink); border-color: var(--pink); color: white; }
+    
+    .refresh-btn {
+      padding: 8px 16px;
+      background: var(--pink);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .refresh-btn:hover { opacity: 0.9; }
+    .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .services {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .service {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    
+    .service-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    
+    .service-dot.running { background: var(--green); }
+    .service-dot.stopped { background: var(--red); }
+    .service-dot.ok { background: var(--green); }
+    .service-dot.pending { background: var(--yellow); }
+    
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .loading { animation: pulse 1.5s infinite; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>
+        <svg width="28" height="28" viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="45" stroke="#ec4899" stroke-width="6"/>
+          <circle cx="30" cy="40" r="8" fill="#ec4899"/>
+          <circle cx="70" cy="40" r="8" fill="#ec4899"/>
+          <circle cx="50" cy="70" r="8" fill="#ec4899"/>
+          <line x1="30" y1="40" x2="70" y2="40" stroke="#ec4899" stroke-width="3"/>
+          <line x1="30" y1="40" x2="50" y2="70" stroke="#ec4899" stroke-width="3"/>
+          <line x1="70" y1="40" x2="50" y2="70" stroke="#ec4899" stroke-width="3"/>
+        </svg>
+        <span>Quorum</span> Dashboard
+      </h1>
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <span id="status-badge" class="status-badge healthy">Loading...</span>
+        <button class="refresh-btn" onclick="refresh()">Refresh</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Overview</h2>
+        <div class="stats-row">
+          <div>
+            <div class="stat" id="stat-agents">-</div>
+            <div class="stat-label">Agents</div>
+          </div>
+          <div>
+            <div class="stat" id="stat-multisigs">-</div>
+            <div class="stat-label">Multisigs</div>
+          </div>
+          <div>
+            <div class="stat" id="stat-proposals">-</div>
+            <div class="stat-label">Proposals</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Background Services</h2>
+        <div class="services" id="services">
+          <div class="service loading">Loading...</div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Webhook Queue</h2>
+        <div class="stats-row">
+          <div>
+            <div class="stat" id="stat-webhook-pending">-</div>
+            <div class="stat-label">Pending</div>
+          </div>
+          <div>
+            <div class="stat" id="stat-webhook-completed">-</div>
+            <div class="stat-label">Completed</div>
+          </div>
+          <div>
+            <div class="stat" id="stat-webhook-failed">-</div>
+            <div class="stat-label">Failed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('multisigs')">Multisigs</button>
+      <button class="tab" onclick="showTab('proposals')">Proposals</button>
+      <button class="tab" onclick="showTab('agents')">Agents</button>
+    </div>
+
+    <div class="card">
+      <div id="tab-content">
+        <div class="empty loading">Loading data...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    let currentTab = 'multisigs';
+    let data = { agents: [], multisigs: [], proposals: [] };
+
+    async function fetchHealth() {
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        const health = await res.json();
+        
+        document.getElementById('status-badge').className = `status-badge ${health.status}`;
+        document.getElementById('status-badge').textContent = health.status.charAt(0).toUpperCase() + health.status.slice(1);
+        
+        document.getElementById('stat-agents').textContent = health.stats.agents;
+        document.getElementById('stat-multisigs').textContent = health.stats.multisigs;
+        document.getElementById('stat-proposals').textContent = health.stats.proposals;
+        
+        if (health.stats.webhooks) {
+          document.getElementById('stat-webhook-pending').textContent = health.stats.webhooks.pending;
+          document.getElementById('stat-webhook-completed').textContent = health.stats.webhooks.completed;
+          document.getElementById('stat-webhook-failed').textContent = health.stats.webhooks.failed;
+        }
+        
+        const servicesHtml = Object.entries(health.checks).map(([name, status]) => {
+          const dotClass = status === 'ok' || status === 'running' ? 'running' : 
+                          status.includes('pending') ? 'pending' : 'stopped';
+          return `<div class="service">
+            <div class="service-dot ${dotClass}"></div>
+            <span>${name}: ${status}</span>
+          </div>`;
+        }).join('');
+        document.getElementById('services').innerHTML = servicesHtml;
+        
+      } catch (e) {
+        document.getElementById('status-badge').className = 'status-badge degraded';
+        document.getElementById('status-badge').textContent = 'Error';
+      }
+    }
+
+    async function fetchData() {
+      try {
+        const [multisigs, agents] = await Promise.all([
+          fetch(`${API_BASE}/v1/multisigs`).then(r => r.json()),
+          fetch(`${API_BASE}/v1/agents`).then(r => r.json()),
+        ]);
+        
+        data.multisigs = multisigs.data || [];
+        data.agents = agents.data || [];
+        
+        // Fetch proposals for each multisig
+        data.proposals = [];
+        for (const m of data.multisigs) {
+          try {
+            const props = await fetch(`${API_BASE}/v1/multisigs/${m.id}/proposals`).then(r => r.json());
+            if (props.data) {
+              data.proposals.push(...props.data);
+            }
+          } catch (e) {}
+        }
+        
+        renderTab();
+      } catch (e) {
+        console.error('Failed to fetch data:', e);
+      }
+    }
+
+    function showTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.tab[onclick="showTab('${tab}')"]`).classList.add('active');
+      renderTab();
+    }
+
+    function renderTab() {
+      const content = document.getElementById('tab-content');
+      
+      if (currentTab === 'multisigs') {
+        if (data.multisigs.length === 0) {
+          content.innerHTML = '<div class="empty">No multisigs yet</div>';
+          return;
+        }
+        content.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Chain</th>
+                <th>Address</th>
+                <th>Threshold</th>
+                <th>Agents</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.multisigs.map(m => `
+                <tr>
+                  <td><strong>${m.name}</strong></td>
+                  <td><span class="badge">${m.chainId}</span></td>
+                  <td class="mono truncate" title="${m.address}">${m.address}</td>
+                  <td>${m.threshold}-of-${m.agents?.length || '?'}</td>
+                  <td>${m.agents?.map(a => a.name || a.id).join(', ') || '-'}</td>
+                  <td class="mono">${new Date(m.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+      
+      if (currentTab === 'proposals') {
+        if (data.proposals.length === 0) {
+          content.innerHTML = '<div class="empty">No proposals yet</div>';
+          return;
+        }
+        content.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Signatures</th>
+                <th>Outputs</th>
+                <th>TXID</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.proposals.map(p => `
+                <tr>
+                  <td class="mono truncate" title="${p.id}">${p.id.slice(0, 8)}...</td>
+                  <td><span class="badge ${p.status}">${p.status}</span></td>
+                  <td>${p.signatures?.length || 0}/${p.requiredSigners?.length || '?'}</td>
+                  <td>${p.outputs?.length || 0} output(s)</td>
+                  <td class="mono truncate" title="${p.txid || ''}">${p.txid ? p.txid.slice(0, 12) + '...' : '-'}</td>
+                  <td class="mono">${new Date(p.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+      
+      if (currentTab === 'agents') {
+        if (data.agents.length === 0) {
+          content.innerHTML = '<div class="empty">No agents yet</div>';
+          return;
+        }
+        content.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Provider</th>
+                <th>Public Key</th>
+                <th>Webhook</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.agents.map(a => `
+                <tr>
+                  <td class="mono">${a.id}</td>
+                  <td><strong>${a.name}</strong></td>
+                  <td><span class="badge">${a.provider}</span></td>
+                  <td class="mono truncate" title="${a.publicKey}">${a.publicKey.slice(0, 16)}...</td>
+                  <td>${a.webhookUrl ? '✓' : '-'}</td>
+                  <td class="mono">${new Date(a.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+    }
+
+    async function refresh() {
+      const btn = document.querySelector('.refresh-btn');
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+      
+      await Promise.all([fetchHealth(), fetchData()]);
+      
+      btn.disabled = false;
+      btn.textContent = 'Refresh';
+    }
+
+    // Initial load
+    refresh();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(fetchHealth, 30000);
+  </script>
+</body>
+</html>
