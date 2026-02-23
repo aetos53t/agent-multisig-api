@@ -494,9 +494,63 @@ export function finalizePSBT(
     throw new Error(`Invalid leaf index: ${selectedLeafIndex}`);
   }
   
-  // Finalize each input
-  // btc-signer should handle witness construction automatically
-  tx.finalize();
+  // For each input, manually build the witness for script-path spending
+  for (let i = 0; i < tx.inputsLength; i++) {
+    const input = tx.getInput(i);
+    
+    // Get tapLeafScript and tapScriptSig
+    const tapLeafScript = input.tapLeafScript;
+    const tapScriptSig = input.tapScriptSig;
+    
+    if (!tapLeafScript || tapLeafScript.length === 0) {
+      throw new Error(`Input ${i}: No tapLeafScript found`);
+    }
+    if (!tapScriptSig || tapScriptSig.length === 0) {
+      throw new Error(`Input ${i}: No signatures found`);
+    }
+    
+    // tapLeafScript[0] = [controlBlockObj, script]
+    const [controlBlockObj, script] = tapLeafScript[0] as [any, Uint8Array];
+    
+    // Build control block bytes: version || internalKey || merklePath
+    const version = new Uint8Array([controlBlockObj.version]);
+    const internalKey = controlBlockObj.internalKey;
+    const merklePath = controlBlockObj.merklePath || [];
+    
+    // Control block = version (1) + internalKey (32) + merklePath (32 * n)
+    const controlBlockLen = 1 + 32 + (merklePath.length * 32);
+    const controlBlock = new Uint8Array(controlBlockLen);
+    controlBlock.set(version, 0);
+    controlBlock.set(internalKey, 1);
+    let offset = 33;
+    for (const pathElement of merklePath) {
+      controlBlock.set(pathElement, offset);
+      offset += 32;
+    }
+    
+    // Sort signatures by pubkey (descending for OP_CHECKSIGADD execution order)
+    // OP_CHECKSIGADD processes in reverse order, so we need sigs in reverse pubkey order
+    const sortedSigs = [...tapScriptSig].sort((a: any, b: any) => {
+      const pubA = hex.encode(a[0].pubKey);
+      const pubB = hex.encode(b[0].pubKey);
+      return pubB.localeCompare(pubA); // Descending order
+    });
+    
+    // Build witness: [sig1, sig2, ..., script, controlBlock]
+    const witness: Uint8Array[] = [];
+    for (const [_key, sig] of sortedSigs) {
+      witness.push(sig as Uint8Array);
+    }
+    witness.push(script);
+    witness.push(controlBlock);
+    
+    console.log(`[Finalize] Input ${i}: ${witness.length - 2} sigs, script ${script.length} bytes, control block ${controlBlock.length} bytes`);
+    
+    // Set the final script witness
+    tx.updateInput(i, {
+      finalScriptWitness: witness,
+    });
+  }
   
   // Extract final transaction
   const finalTx = tx.extract();
