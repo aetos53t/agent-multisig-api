@@ -18,6 +18,7 @@ import agentsRouter from './routes/agents';
 import webhooksRouter from './routes/webhooks';
 import healthRouter from './routes/health';
 import metricsRouter from './routes/metrics';
+import invitesRouter from './routes/invites';
 import roomRoutes, { handleProposalWebSocket, roomManager } from './services/rooms';
 import { createAuthMiddleware } from './middleware/auth';
 import { createRateLimitMiddleware } from './middleware/rateLimit';
@@ -79,6 +80,7 @@ v1.route('/multisigs', multisigsRouter);
 v1.route('/proposals', proposalsRouter);
 v1.route('/agents', agentsRouter);
 v1.route('/webhooks', webhooksRouter);
+v1.route('/invites', invitesRouter);
 
 // Proposal room routes (messages, room info)
 v1.route('/proposals', roomRoutes);
@@ -166,6 +168,34 @@ app.get('/', async (c) => {
 
 // Redirect /p/ to landing
 app.get('/p', (c) => c.redirect('/'));
+
+// Serve join page
+app.get('/join/:id', async (c) => {
+  try {
+    const strategies = [
+      `${import.meta.dir}/../rooms/join.html`,
+      './rooms/join.html',
+      '/app/rooms/join.html',
+      `${process.cwd()}/rooms/join.html`,
+    ];
+    
+    for (const path of strategies) {
+      try {
+        const file = Bun.file(path);
+        if (await file.exists()) {
+          const html = await file.text();
+          return c.html(html);
+        }
+      } catch {
+        // Try next strategy
+      }
+    }
+    
+    throw new Error('Join page not found');
+  } catch {
+    return c.redirect('/');
+  }
+});
 
 // Serve new multisig wizard
 app.get('/new', async (c) => {

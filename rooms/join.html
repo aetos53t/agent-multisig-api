@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join Multisig - Quorum</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #0a0a0a;
+      --card: #111;
+      --border: #222;
+      --text: #fff;
+      --text-muted: #888;
+      --pink: #ec4899;
+      --green: #22c55e;
+      --yellow: #eab308;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 480px;
+      width: 100%;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--pink);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 24px;
+    }
+    
+    .logo-text {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    
+    .subtitle {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+    
+    .info-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    
+    .info-label {
+      color: var(--text-muted);
+    }
+    
+    .info-value {
+      font-weight: 600;
+    }
+    
+    .signers {
+      margin-top: 16px;
+    }
+    
+    .signer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .signer-number {
+      width: 28px;
+      height: 28px;
+      background: var(--border);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .signer-number.filled {
+      background: var(--green);
+      color: black;
+    }
+    
+    .signer-number.you {
+      background: var(--pink);
+      color: black;
+    }
+    
+    .signer-info {
+      flex: 1;
+    }
+    
+    .signer-name {
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .signer-key {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+    
+    .signer-empty {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .form-group .hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+    
+    input, textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--pink);
+    }
+    
+    textarea {
+      font-family: monospace;
+      font-size: 13px;
+      min-height: 80px;
+      resize: vertical;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: var(--pink);
+      color: black;
+    }
+    
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+      margin-top: 12px;
+    }
+    
+    .or-divider {
+      text-align: center;
+      color: var(--text-muted);
+      margin: 20px 0;
+      font-size: 14px;
+    }
+    
+    .success {
+      text-align: center;
+      padding: 20px 0;
+    }
+    
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 20px;
+    }
+    
+    .waiting {
+      text-align: center;
+      padding: 20px 0;
+    }
+    
+    .waiting-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">Q</div>
+      <span class="logo-text">Quorum</span>
+    </div>
+    
+    <!-- Loading state -->
+    <div id="loading">
+      <h1>Loading...</h1>
+      <p class="subtitle">Fetching multisig details</p>
+    </div>
+    
+    <!-- Join form -->
+    <div id="join-form" class="hidden">
+      <h1>Join Multisig</h1>
+      <p class="subtitle">You've been invited to join a shared wallet. Add your public key to become a signer.</p>
+      
+      <div class="info-card">
+        <div class="info-row">
+          <span class="info-label">Name</span>
+          <span class="info-value" id="ms-name">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Chain</span>
+          <span class="info-value" id="ms-chain">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Threshold</span>
+          <span class="info-value" id="ms-threshold">-</span>
+        </div>
+        
+        <div class="signers" id="signers">
+          <!-- Signers will be populated here -->
+        </div>
+      </div>
+      
+      <div id="error" class="error hidden"></div>
+      
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" id="name" placeholder="e.g., Alice, Treasury Bot">
+      </div>
+      
+      <div class="form-group">
+        <label>Your Public Key</label>
+        <textarea id="pubkey" placeholder="Paste your public key (hex)..."></textarea>
+        <div class="hint">For Bitcoin: 32-byte x-only pubkey (64 hex chars). For EVM: standard public key.</div>
+      </div>
+      
+      <button class="btn btn-primary" id="join-btn" onclick="joinMultisig()">
+        Join as Signer
+      </button>
+      
+      <div class="or-divider">— or —</div>
+      
+      <button class="btn btn-secondary" onclick="generateKey()">
+        Generate New Keypair
+      </button>
+    </div>
+    
+    <!-- Waiting state -->
+    <div id="waiting" class="hidden">
+      <div class="waiting">
+        <div class="waiting-icon">⏳</div>
+        <h1>Waiting for Others</h1>
+        <p class="subtitle">You've joined! Waiting for remaining signers.</p>
+      </div>
+      
+      <div class="info-card">
+        <div class="signers" id="waiting-signers">
+          <!-- Signers will be populated here -->
+        </div>
+      </div>
+      
+      <p style="text-align: center; color: var(--text-muted); font-size: 14px;">
+        Share the invite link with other signers. The multisig address will be generated once everyone joins.
+      </p>
+    </div>
+    
+    <!-- Ready state -->
+    <div id="ready" class="hidden">
+      <div class="success">
+        <div class="success-icon">✓</div>
+        <h1>Multisig Ready!</h1>
+        <p class="subtitle">All signers have joined. The address is ready to receive funds.</p>
+      </div>
+      
+      <div class="form-group">
+        <label>Multisig Address</label>
+        <input type="text" id="address" readonly style="font-family: monospace;">
+      </div>
+      
+      <button class="btn btn-primary" onclick="copyAddress()">
+        Copy Address
+      </button>
+      
+      <button class="btn btn-secondary" onclick="createProposal()">
+        Create First Proposal →
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Get invite ID from URL
+    const pathParts = window.location.pathname.split('/');
+    const inviteId = pathParts[pathParts.length - 1];
+    
+    let pendingMultisig = null;
+    let mySlot = null;
+    
+    async function init() {
+      try {
+        // Fetch pending multisig details
+        const res = await fetch(`/v1/invites/${inviteId}`);
+        const data = await res.json();
+        
+        if (!data.success) {
+          showError(data.error?.message || 'Invite not found');
+          return;
+        }
+        
+        pendingMultisig = data.data;
+        renderState();
+        
+      } catch (e) {
+        showError('Failed to load invite');
+      }
+    }
+    
+    function renderState() {
+      document.getElementById('loading').classList.add('hidden');
+      
+      const { name, chainId, threshold, slots, address } = pendingMultisig;
+      const filledCount = slots.filter(s => s.publicKey).length;
+      const totalSlots = slots.length;
+      
+      // Update info
+      document.getElementById('ms-name').textContent = name;
+      document.getElementById('ms-chain').textContent = chainId;
+      document.getElementById('ms-threshold').textContent = `${threshold} of ${totalSlots}`;
+      
+      // Render signers
+      const signersHtml = slots.map((slot, i) => {
+        const isFilled = !!slot.publicKey;
+        const isMe = slot.isMe;
+        return `
+          <div class="signer">
+            <div class="signer-number ${isFilled ? (isMe ? 'you' : 'filled') : ''}">${i + 1}</div>
+            <div class="signer-info">
+              ${isFilled ? `
+                <div class="signer-name">${slot.name}${isMe ? ' (you)' : ''}</div>
+                <div class="signer-key">${slot.publicKey.slice(0, 16)}...</div>
+              ` : `
+                <div class="signer-empty">Waiting for signer...</div>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      // Check if I've already joined
+      const myJoinedSlot = slots.find(s => s.isMe);
+      
+      if (address) {
+        // Multisig is ready
+        document.getElementById('ready').classList.remove('hidden');
+        document.getElementById('address').value = address;
+      } else if (myJoinedSlot) {
+        // I've joined, waiting for others
+        document.getElementById('waiting').classList.remove('hidden');
+        document.getElementById('waiting-signers').innerHTML = signersHtml;
+        
+        // Poll for updates
+        setTimeout(init, 5000);
+      } else {
+        // Show join form
+        document.getElementById('join-form').classList.remove('hidden');
+        document.getElementById('signers').innerHTML = signersHtml;
+      }
+    }
+    
+    function showError(msg) {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('join-form').classList.remove('hidden');
+      const el = document.getElementById('error');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+    
+    async function joinMultisig() {
+      const name = document.getElementById('name').value.trim();
+      const pubkey = document.getElementById('pubkey').value.trim();
+      
+      if (!name) {
+        showError('Please enter your name');
+        return;
+      }
+      
+      if (!pubkey) {
+        showError('Please enter your public key');
+        return;
+      }
+      
+      const btn = document.getElementById('join-btn');
+      btn.disabled = true;
+      btn.textContent = 'Joining...';
+      
+      try {
+        const res = await fetch(`/v1/invites/${inviteId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, publicKey: pubkey }),
+        });
+        
+        const data = await res.json();
+        
+        if (!data.success) {
+          throw new Error(data.error?.message || 'Failed to join');
+        }
+        
+        // Refresh state
+        pendingMultisig = data.data;
+        document.getElementById('join-form').classList.add('hidden');
+        renderState();
+        
+      } catch (e) {
+        showError(e.message);
+        btn.disabled = false;
+        btn.textContent = 'Join as Signer';
+      }
+    }
+    
+    function generateKey() {
+      // Generate a random 32-byte private key
+      const privateKey = new Uint8Array(32);
+      crypto.getRandomValues(privateKey);
+      const privateHex = Array.from(privateKey).map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // For now, just show the private key (in production, would compute pubkey)
+      alert(`Generated keypair!\n\nPrivate Key (SAVE THIS!):\n${privateHex}\n\nNote: In production, we'd compute the public key for you.`);
+      
+      // Would compute pubkey here with @noble/secp256k1
+      // For now, user needs to derive it themselves
+    }
+    
+    function copyAddress() {
+      const input = document.getElementById('address');
+      input.select();
+      document.execCommand('copy');
+      event.target.textContent = 'Copied!';
+      setTimeout(() => event.target.textContent = 'Copy Address', 2000);
+    }
+    
+    function createProposal() {
+      // Navigate to proposal creation
+      window.location.href = `/new?multisigId=${pendingMultisig.id}`;
+    }
+    
+    // Start
+    init();
+  </script>
+</body>
+</html>
