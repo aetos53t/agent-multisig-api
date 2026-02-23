@@ -24,6 +24,7 @@ import { getConfirmedUtxos, getAllUtxos, getFeeRate, broadcastTransaction, p2trS
 import { compressedToXOnly } from '../services/taproot';
 import repo from '../db/repository';
 import webhooks from '../services/webhooks';
+import { onSignatureAdded, onProposalStatusChanged, onProposalCreated } from '../services/rooms';
 
 const router = new Hono();
 
@@ -192,6 +193,10 @@ router.post('/', async (c) => {
     };
     
     await repo.createProposal(proposal);
+    
+    // Notify room of creation
+    const creatorAgent = await repo.getAgent(proposal.createdBy);
+    onProposalCreated(proposal.id, creatorAgent?.name || proposal.createdBy, input.note);
     
     // Track auto-broadcast preference
     if (input.autoBroadcast) {
@@ -435,6 +440,10 @@ router.post('/:id/sign', async (c) => {
   };
   await repo.addSignature(proposalId, sig);
   
+  // Notify room of signature
+  const currentSigCount = (proposal.signatures?.length || 0) + 1;
+  onSignatureAdded(proposalId, agentId, agent.name, currentSigCount, multisig.threshold);
+  
   // Update PSBT with signature for ALL inputs (they all use the same script)
   let signedTx = proposal.signedTx || proposal.unsignedTx;
   const numInputs = proposal.inputs?.length || 1;
@@ -515,6 +524,9 @@ router.post('/:id/sign', async (c) => {
           await repo.updateProposalStatus(proposalId, 'broadcast', { txid: broadcastTxid });
           finalStatus = 'broadcast';
           txid = broadcastTxid;
+          
+          // Notify room
+          onProposalStatusChanged(proposalId, 'finalized', 'broadcast', broadcastTxid);
           
           console.log(`[Auto-Broadcast] ✓ Transaction broadcast: ${broadcastTxid}`);
           
@@ -670,6 +682,9 @@ router.post('/:id/broadcast', async (c) => {
     const txid = await broadcastTransaction(proposal.finalTx, multisig.chainId);
     
     await repo.updateProposalStatus(proposalId, 'broadcast', { txid });
+    
+    // Notify room of broadcast
+    onProposalStatusChanged(proposalId, 'finalized', 'broadcast', txid);
     
     // Notify agents of successful broadcast
     webhooks.notifyBroadcast(proposal, multisig, txid).catch(err => {

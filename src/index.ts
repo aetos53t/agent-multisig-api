@@ -18,6 +18,7 @@ import agentsRouter from './routes/agents';
 import webhooksRouter from './routes/webhooks';
 import healthRouter from './routes/health';
 import metricsRouter from './routes/metrics';
+import roomRoutes, { handleProposalWebSocket, roomManager } from './services/rooms';
 import { createAuthMiddleware } from './middleware/auth';
 import { createRateLimitMiddleware } from './middleware/rateLimit';
 
@@ -78,6 +79,52 @@ v1.route('/multisigs', multisigsRouter);
 v1.route('/proposals', proposalsRouter);
 v1.route('/agents', agentsRouter);
 v1.route('/webhooks', webhooksRouter);
+
+// Proposal room routes (messages, room info)
+v1.route('/proposals', roomRoutes);
+
+// Active rooms endpoint
+v1.get('/rooms', (c) => {
+  const rooms = roomManager.getActiveRooms();
+  return c.json({ success: true, data: { rooms, count: rooms.length } });
+});
+
+// WebSocket upgrade for proposal rooms
+v1.get('/proposals/:id/live', async (c) => {
+  const proposalId = c.req.param('id');
+  const agentId = c.req.query('agentId') || c.get('agentId') as string;
+  
+  if (!agentId) {
+    return c.json({ 
+      success: false, 
+      error: { code: 'UNAUTHORIZED', message: 'agentId query param or auth required' } 
+    }, 401);
+  }
+  
+  // Check if this is a WebSocket upgrade request
+  const upgradeHeader = c.req.header('Upgrade');
+  if (upgradeHeader?.toLowerCase() !== 'websocket') {
+    return c.json({ 
+      success: true, 
+      data: { 
+        message: 'WebSocket endpoint. Connect with ws:// protocol.',
+        wsUrl: `wss://quorumclaw.com/v1/proposals/${proposalId}/live?agentId=${agentId}`,
+      } 
+    });
+  }
+  
+  // For Bun, we need to use the server.upgrade() method
+  // This will be handled by the websocket handler in the export
+  const success = (globalThis as any).server?.upgrade(c.req.raw, {
+    data: { proposalId, agentId },
+  });
+  
+  if (success) {
+    return new Response(null, { status: 101 });
+  }
+  
+  return c.json({ success: false, error: { code: 'UPGRADE_FAILED', message: 'WebSocket upgrade failed' } }, 500);
+});
 
 app.route('/v1', v1);
 
@@ -237,16 +284,36 @@ runMigrations().then(async (success) => {
 
 console.log(`
 ╔═══════════════════════════════════════════════════════════════════╗
-║           Quorum API v0.1.2                               ║
+║           Quorum API v0.2.0 - Coordination Layer          ║
 ╠═══════════════════════════════════════════════════════════════════╣
 ║  Environment: ${(process.env.NODE_ENV || 'development').padEnd(46)}║
 ║  Port: ${port.toString().padEnd(53)}║
 ║  Network: ${(process.env.BITCOIN_NETWORK || 'mainnet').padEnd(50)}║
+║  Features: Rooms, WebSocket, Real-time Coordination               ║
 ╚═══════════════════════════════════════════════════════════════════╝
 `);
 
-export default {
+// Store server reference for WebSocket upgrades
+const server = Bun.serve({
   port,
   fetch: app.fetch,
-};
-// Auto-migrate v0.1.2
+  websocket: {
+    open(ws) {
+      const { proposalId, agentId } = ws.data as { proposalId: string; agentId: string };
+      handleProposalWebSocket(proposalId, agentId, ws as unknown as WebSocket);
+    },
+    message(ws, message) {
+      // Messages handled in room subscription
+      const msgStr = typeof message === 'string' ? message : new TextDecoder().decode(message);
+      ws.send(msgStr); // Echo for now, real handling in room
+    },
+    close(ws) {
+      // Cleanup handled by room manager unsubscribe
+    },
+  },
+});
+
+(globalThis as any).server = server;
+
+export default server;
+// Auto-migrate v0.2.0 - Coordination Layer

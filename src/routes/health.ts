@@ -8,6 +8,7 @@ import repo from '../db/repository';
 import confirmationService from '../services/confirmation';
 import webhookQueueService from '../services/webhookQueue';
 import expirationService from '../services/expiration';
+import { roomManager } from '../services/rooms';
 
 const router = new Hono();
 
@@ -45,6 +46,7 @@ router.get('/', async (c) => {
       multisigs: stats.multisigs,
       proposals: stats.proposals,
       webhooks: webhookStats,
+      activeRooms: roomManager.getActiveRooms().length,
     },
   });
 });
