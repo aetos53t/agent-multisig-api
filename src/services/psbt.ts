@@ -574,6 +574,66 @@ export function finalizePSBT(
 // ═══════════════════════════════════════════════════════════════════
 
 /**
+ * Extract sighashes from an existing PSBT for signing
+ * Returns the sighash that each input needs to be signed
+ */
+export function getSighashesFromPSBT(psbtBase64: string): { sighash: string; inputIndex: number }[] {
+  try {
+    const psbtBytes = Uint8Array.from(atob(psbtBase64), c => c.charCodeAt(0));
+    const tx = btc.Transaction.fromPSBT(psbtBytes);
+    
+    const sighashes: { sighash: string; inputIndex: number }[] = [];
+    
+    for (let inputIndex = 0; inputIndex < tx.inputsLength; inputIndex++) {
+      const input = tx.getInput(inputIndex);
+      
+      // Get amounts and scripts for all inputs (needed for sighash computation)
+      const amounts: bigint[] = [];
+      const prevOutScripts: Uint8Array[] = [];
+      
+      for (let i = 0; i < tx.inputsLength; i++) {
+        const inp = tx.getInput(i);
+        amounts.push(inp.witnessUtxo?.amount || 0n);
+        prevOutScripts.push(inp.witnessUtxo?.script || new Uint8Array());
+      }
+      
+      // Get the leaf script from tapLeafScript
+      const tapLeafScript = input.tapLeafScript;
+      if (!tapLeafScript || tapLeafScript.length === 0) {
+        continue; // Skip inputs without tapLeafScript
+      }
+      
+      // tapLeafScript[0] is [controlBlock, scriptWithVersion]
+      // btc-signer appends leaf version byte (0xc0) to script - we need to strip it
+      const [, scriptWithVersion] = tapLeafScript[0] as [any, Uint8Array];
+      const leafScript = scriptWithVersion.slice(0, -1);
+      
+      // Compute sighash using btc-signer's native method
+      // preimageWitnessV1 returns the final tagged hash (NOT preimage!)
+      const sighashBytes = (tx as any).preimageWitnessV1(
+        inputIndex,
+        prevOutScripts,
+        btc.SigHash.DEFAULT,
+        amounts,
+        undefined,  // codeSeparator
+        leafScript,
+        TAPSCRIPT_LEAF_VERSION
+      );
+      
+      sighashes.push({
+        sighash: hex.encode(sighashBytes),
+        inputIndex,
+      });
+    }
+    
+    return sighashes;
+  } catch (e) {
+    console.error('[getSighashesFromPSBT] Error:', e);
+    return [];
+  }
+}
+
+/**
  * Parse and inspect a PSBT
  */
 export function inspectPSBT(psbt: string): {
@@ -633,4 +693,5 @@ export default {
   checkPSBTThreshold,
   finalizePSBT,
   inspectPSBT,
+  getSighashesFromPSBT,
 };
