@@ -48,6 +48,9 @@ const CreateProposalSchema = z.object({
   expiresInSeconds: z.number().int().min(60).max(604800).optional(),
   allowUnconfirmed: z.boolean().optional(), // Allow mempool UTXOs (risky!)
   autoBroadcast: z.boolean().optional(), // Auto-broadcast after threshold met
+  // Visibility settings
+  visibility: z.enum(['public', 'password', 'private']).default('public'),
+  password: z.string().min(4).max(64).optional(), // Required if visibility=password
 });
 
 const SignProposalSchema = z.object({
@@ -181,6 +184,22 @@ router.post('/', async (c) => {
       amount: u.amount.toString(),
     }));
     
+    // Hash password if visibility=password
+    let passwordHash: string | undefined;
+    if (input.visibility === 'password') {
+      if (!input.password) {
+        return c.json<ApiResponse<never>>({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Password required for password-protected proposals' },
+        }, 400);
+      }
+      // Simple hash for now (in production use bcrypt)
+      const encoder = new TextEncoder();
+      const data = encoder.encode(input.password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      passwordHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
     const proposal: Proposal = {
       id: proposalId,
       multisigId: input.multisigId,
@@ -201,6 +220,8 @@ router.post('/', async (c) => {
       createdAt: now,
       createdBy: selectedLeaf.signerAgentIds[0] || 'unknown',
       expiresAt,
+      visibility: input.visibility || 'public',
+      passwordHash,
     };
     
     await repo.createProposal(proposal);
@@ -263,6 +284,8 @@ router.post('/', async (c) => {
  */
 router.get('/:id', async (c) => {
   const id = c.req.param('id');
+  const password = c.req.query('password');
+  const agentId = c.req.query('agentId') || c.req.header('X-Agent-Id');
   
   const proposal = await repo.getProposal(id);
   if (!proposal) {
@@ -275,6 +298,41 @@ router.get('/:id', async (c) => {
     }, 404);
   }
   
+  // Check visibility access
+  if (proposal.visibility === 'private') {
+    // Only signers can view private proposals
+    if (!agentId || !proposal.requiredSigners.includes(agentId)) {
+      return c.json<ApiResponse<never>>({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'This proposal is private' },
+      }, 403);
+    }
+  } else if (proposal.visibility === 'password' && proposal.passwordHash) {
+    // Check password
+    if (!password) {
+      return c.json<ApiResponse<any>>({
+        success: true,
+        data: {
+          id: proposal.id,
+          visibility: 'password',
+          requiresPassword: true,
+          status: proposal.status,
+        },
+      });
+    }
+    // Verify password
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const providedHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    if (providedHash !== proposal.passwordHash) {
+      return c.json<ApiResponse<never>>({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Invalid password' },
+      }, 403);
+    }
+  }
+  
   // Check expiration
   if (proposal.status === 'pending' && new Date() > proposal.expiresAt) {
     await repo.updateProposalStatus(id, 'expired');
@@ -283,10 +341,13 @@ router.get('/:id', async (c) => {
   
   const multisig = await repo.getMultisig(proposal.multisigId);
   
+  // Don't expose passwordHash
+  const { passwordHash, ...proposalData } = proposal;
+  
   return c.json<ApiResponse<any>>({
     success: true,
     data: {
-      ...proposal,
+      ...proposalData,
       fee: proposal.fee?.toString(),
       outputs: proposal.outputs.map(o => ({ ...o, amount: o.amount.toString() })),
       changeOutput: proposal.changeOutput ? {

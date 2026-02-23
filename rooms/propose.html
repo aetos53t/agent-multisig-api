@@ -226,6 +226,32 @@
           <textarea id="note" rows="2" placeholder="What's this payment for?"></textarea>
         </div>
 
+        <div class="form-group">
+          <label>Visibility</label>
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+              <input type="radio" name="visibility" value="public" checked> 
+              <span>🌐 Public</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+              <input type="radio" name="visibility" value="password"> 
+              <span>🔒 Password</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+              <input type="radio" name="visibility" value="private"> 
+              <span>👁️ Private</span>
+            </label>
+          </div>
+          <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem;">
+            Public: Anyone can view • Password: Requires password to view • Private: Agents only
+          </div>
+        </div>
+
+        <div class="form-group hidden" id="passwordGroup">
+          <label for="proposalPassword">Password</label>
+          <input type="password" id="proposalPassword" placeholder="Enter a password for this proposal">
+        </div>
+
         <button class="btn btn-primary" id="submitBtn" onclick="submitProposal()">
           Create Proposal
         </button>
@@ -309,10 +335,24 @@
         `${multisig.threshold} of ${multisig.agents?.length || '?'}`;
     }
 
+    // Show/hide password field based on visibility selection
+    document.querySelectorAll('input[name="visibility"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const passwordGroup = document.getElementById('passwordGroup');
+        if (e.target.value === 'password') {
+          passwordGroup.classList.remove('hidden');
+        } else {
+          passwordGroup.classList.add('hidden');
+        }
+      });
+    });
+
     async function submitProposal() {
       const recipient = document.getElementById('recipient').value.trim();
       const amount = parseInt(document.getElementById('amount').value);
       const note = document.getElementById('note').value.trim();
+      const visibility = document.querySelector('input[name="visibility"]:checked').value;
+      const password = document.getElementById('proposalPassword').value;
 
       if (!recipient) {
         alert('Please enter a recipient address');
@@ -324,19 +364,30 @@
         return;
       }
 
+      if (visibility === 'password' && !password) {
+        alert('Please enter a password for password-protected proposals');
+        return;
+      }
+
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = 'Creating...';
 
       try {
+        const payload = {
+          multisigId: multisig.id,
+          outputs: [{ address: recipient, amount }],
+          note: note || undefined,
+          visibility,
+        };
+        if (visibility === 'password') {
+          payload.password = password;
+        }
+
         const res = await fetch('/v1/proposals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            multisigId: multisig.id,
-            outputs: [{ address: recipient, amount }],
-            note: note || undefined,
-          }),
+          body: JSON.stringify(payload),
         });
 
         const data = await res.json();

@@ -314,6 +314,10 @@ export interface Proposal {
   createdAt: Date;
   createdBy: string;
   expiresAt: Date;
+  
+  // Visibility
+  visibility?: 'public' | 'password' | 'private';
+  passwordHash?: string;  // bcrypt hash if visibility=password
 }
 
 export interface ProposalCreateInput {
