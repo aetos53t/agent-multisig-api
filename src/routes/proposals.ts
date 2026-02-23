@@ -103,7 +103,7 @@ router.post('/', async (c) => {
     }, 404);
   }
   
-  if (!multisig.bitcoin) {
+  if (!multisig.chainId.startsWith('bitcoin-')) {
     return c.json<ApiResponse<never>>({
       success: false,
       error: {
