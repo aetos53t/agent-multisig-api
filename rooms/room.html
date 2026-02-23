@@ -194,13 +194,14 @@
       document.getElementById('room-content').classList.remove('hidden');
       
       // Name & threshold
+      const totalSlots = roomData.slots?.length || roomData.totalSlots || 2;
       document.getElementById('room-name').textContent = roomData.name || `Room ${inviteId.slice(0, 8)}`;
-      document.getElementById('room-threshold').textContent = `${roomData.threshold}-of-${roomData.totalSlots} Multisig`;
+      document.getElementById('room-threshold').textContent = `${roomData.threshold}-of-${totalSlots} Multisig`;
       
-      // Status badge
-      const filledSlots = roomData.slots.filter(s => s.filled).length;
+      // Status badge - slot is filled if it has a name
+      const filledSlots = roomData.slots.filter(s => s.name).length;
       const badge = document.getElementById('status-badge');
-      if (filledSlots === roomData.totalSlots) {
+      if (filledSlots === totalSlots) {
         badge.className = 'px-3 py-1 rounded-full text-sm bg-green-500/20 text-green-400';
         badge.textContent = '✓ Ready';
       } else {
@@ -210,23 +211,25 @@
       
       // Signers list
       const signersList = document.getElementById('signers-list');
-      signersList.innerHTML = roomData.slots.map((slot, i) => `
+      signersList.innerHTML = roomData.slots.map((slot, i) => {
+        const isFilled = !!slot.name;
+        return `
         <div class="flex items-center gap-3 p-3 bg-black/30 rounded-lg">
-          <div class="w-8 h-8 rounded-full ${slot.filled ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-500'} flex items-center justify-center text-sm">
-            ${slot.filled ? '✓' : (i + 1)}
+          <div class="w-8 h-8 rounded-full ${isFilled ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-500'} flex items-center justify-center text-sm">
+            ${isFilled ? '✓' : (i + 1)}
           </div>
           <div class="flex-1">
-            ${slot.filled 
+            ${isFilled 
               ? `<div class="font-medium">${slot.name}</div>
-                 <div class="text-xs text-gray-500 font-mono">${slot.agentId || ''}</div>`
+                 <div class="text-xs text-gray-500 font-mono">${slot.sessionId || ''}</div>`
               : `<div class="text-gray-500">Waiting for signer...</div>`
             }
           </div>
         </div>
-      `).join('');
+      `}).join('');
       
       // Show join section if slots available
-      const hasEmptySlot = roomData.slots.some(s => !s.filled);
+      const hasEmptySlot = roomData.slots.some(s => !s.name);
       if (hasEmptySlot) {
         document.getElementById('join-section').classList.remove('hidden');
       } else {
