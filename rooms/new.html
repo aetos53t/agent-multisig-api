@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quorum - Create Multisig</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #0a0a0a;
+      --card: #111;
+      --border: #222;
+      --text: #fff;
+      --text-muted: #888;
+      --pink: #ec4899;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --blue: #3b82f6;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--pink);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 20px;
+    }
+    
+    .logo-text {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    
+    /* Steps */
+    .steps {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    
+    .step {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+    }
+    
+    .step.active {
+      background: var(--pink);
+    }
+    
+    .step.complete {
+      background: var(--green);
+    }
+    
+    /* Card */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    
+    .card-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .card-subtitle {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    
+    /* Form */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .form-group .hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+    
+    input, textarea, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--pink);
+    }
+    
+    input::placeholder, textarea::placeholder {
+      color: var(--text-muted);
+    }
+    
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    
+    select {
+      cursor: pointer;
+    }
+    
+    /* Agent list */
+    .agent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .agent-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    
+    .agent-item input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+    
+    .agent-item input:focus {
+      outline: none;
+    }
+    
+    .agent-number {
+      width: 28px;
+      height: 28px;
+      background: var(--pink);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: black;
+    }
+    
+    .remove-agent {
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .remove-agent:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+    
+    .add-agent {
+      padding: 14px 16px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-align: center;
+      font-size: 14px;
+    }
+    
+    .add-agent:hover {
+      border-color: var(--pink);
+      color: var(--pink);
+    }
+    
+    /* Threshold selector */
+    .threshold-selector {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .threshold-option {
+      flex: 1;
+      padding: 16px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .threshold-option:hover {
+      border-color: var(--text-muted);
+    }
+    
+    .threshold-option.selected {
+      border-color: var(--pink);
+      background: var(--pink)/10;
+    }
+    
+    .threshold-option .number {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .threshold-option .label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    /* Chain selector */
+    .chain-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    
+    .chain-option {
+      padding: 16px;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .chain-option:hover {
+      border-color: var(--text-muted);
+    }
+    
+    .chain-option.selected {
+      border-color: var(--pink);
+    }
+    
+    .chain-option .chain-icon {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+    
+    .chain-option .chain-name {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    
+    .chain-option .chain-type {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    
+    /* Buttons */
+    .btn {
+      padding: 16px 32px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      width: 100%;
+    }
+    
+    .btn-primary {
+      background: var(--pink);
+      color: black;
+    }
+    
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+    }
+    
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .btn-row .btn {
+      flex: 1;
+    }
+    
+    /* Success */
+    .success-card {
+      text-align: center;
+    }
+    
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--green)/20;
+      border: 2px solid var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 24px;
+    }
+    
+    .success-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .success-subtitle {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    
+    .share-link {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .share-link input {
+      flex: 1;
+      font-family: monospace;
+    }
+    
+    .copy-btn {
+      padding: 14px 20px;
+      background: var(--pink);
+      border: none;
+      border-radius: 10px;
+      color: black;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .copy-btn:hover {
+      opacity: 0.9;
+    }
+    
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+    }
+    
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--pink);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Error */
+    .error {
+      background: var(--red)/20;
+      border: 1px solid var(--red);
+      border-radius: 10px;
+      padding: 16px;
+      color: var(--red);
+      margin-bottom: 20px;
+    }
+    
+    /* Hidden */
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <a href="/" class="logo">
+        <div class="logo-icon">Q</div>
+        <span class="logo-text">Quorum</span>
+      </a>
+    </header>
+    
+    <!-- Progress Steps -->
+    <div class="steps">
+      <div class="step active" id="step-1"></div>
+      <div class="step" id="step-2"></div>
+      <div class="step" id="step-3"></div>
+    </div>
+    
+    <!-- Step 1: Choose Chain -->
+    <div class="card" id="card-1">
+      <h2 class="card-title">Choose Network</h2>
+      <p class="card-subtitle">Select the blockchain for your multisig wallet.</p>
+      
+      <div class="chain-options">
+        <div class="chain-option selected" data-chain="bitcoin-mainnet">
+          <div class="chain-icon">₿</div>
+          <div class="chain-name">Bitcoin</div>
+          <div class="chain-type">Taproot MuSig2</div>
+        </div>
+        <div class="chain-option" data-chain="base">
+          <div class="chain-icon">🔵</div>
+          <div class="chain-name">Base</div>
+          <div class="chain-type">Safe Multisig</div>
+        </div>
+        <div class="chain-option" data-chain="ethereum">
+          <div class="chain-icon">⟠</div>
+          <div class="chain-name">Ethereum</div>
+          <div class="chain-type">Safe Multisig</div>
+        </div>
+        <div class="chain-option" data-chain="solana">
+          <div class="chain-icon">◎</div>
+          <div class="chain-name">Solana</div>
+          <div class="chain-type">Squads v4</div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 24px;">
+        <button class="btn btn-primary" onclick="nextStep(1)">Continue</button>
+      </div>
+    </div>
+    
+    <!-- Step 2: Add Signers -->
+    <div class="card hidden" id="card-2">
+      <h2 class="card-title">Add Signers</h2>
+      <p class="card-subtitle">Add the agents who will co-sign transactions.</p>
+      
+      <div class="form-group">
+        <label>Multisig Name</label>
+        <input type="text" id="multisig-name" placeholder="e.g., Treasury, Team Wallet">
+      </div>
+      
+      <div class="form-group">
+        <label>Signers</label>
+        <div class="agent-list" id="agent-list">
+          <div class="agent-item">
+            <div class="agent-number">1</div>
+            <input type="text" class="agent-input" placeholder="Agent ID (e.g., aetos-agent-1)">
+          </div>
+          <div class="agent-item">
+            <div class="agent-number">2</div>
+            <input type="text" class="agent-input" placeholder="Agent ID">
+            <button class="remove-agent" onclick="removeAgent(this)">×</button>
+          </div>
+        </div>
+        <button class="add-agent" onclick="addAgent()">+ Add Another Signer</button>
+        <div class="hint">Enter Agent IDs. Agents must be registered with Quorum first.</div>
+      </div>
+      
+      <div class="form-group">
+        <label>Threshold (signatures required)</label>
+        <div class="threshold-selector" id="threshold-selector">
+          <div class="threshold-option selected" data-threshold="2">
+            <div class="number">2</div>
+            <div class="label">of 2</div>
+          </div>
+        </div>
+        <div class="hint">Number of signatures required to approve transactions.</div>
+      </div>
+      
+      <div class="btn-row" style="margin-top: 24px;">
+        <button class="btn btn-secondary" onclick="prevStep(2)">Back</button>
+        <button class="btn btn-primary" onclick="nextStep(2)">Continue</button>
+      </div>
+    </div>
+    
+    <!-- Step 3: Create Proposal (Optional) -->
+    <div class="card hidden" id="card-3">
+      <h2 class="card-title">Create First Proposal</h2>
+      <p class="card-subtitle">Optionally create your first transaction proposal.</p>
+      
+      <div class="form-group">
+        <label>Recipient Address</label>
+        <input type="text" id="recipient" placeholder="bc1q... or 0x...">
+      </div>
+      
+      <div class="form-group">
+        <label>Amount (satoshis for BTC, wei for EVM)</label>
+        <input type="number" id="amount" placeholder="10000">
+      </div>
+      
+      <div class="form-group">
+        <label>Note (optional)</label>
+        <input type="text" id="note" placeholder="e.g., Payment to vendor">
+      </div>
+      
+      <div id="error-message" class="error hidden"></div>
+      
+      <div class="btn-row" style="margin-top: 24px;">
+        <button class="btn btn-secondary" onclick="prevStep(3)">Back</button>
+        <button class="btn btn-primary" id="create-btn" onclick="createMultisig()">
+          Create Multisig
+        </button>
+      </div>
+      
+      <div class="loading hidden" id="loading">
+        <div class="spinner"></div>
+        <span>Creating multisig...</span>
+      </div>
+    </div>
+    
+    <!-- Success -->
+    <div class="card hidden" id="card-success">
+      <div class="success-card">
+        <div class="success-icon">✓</div>
+        <h2 class="success-title">Multisig Created!</h2>
+        <p class="success-subtitle">Share this link with your co-signers to coordinate.</p>
+        
+        <div class="share-link">
+          <input type="text" id="share-url" readonly>
+          <button class="copy-btn" onclick="copyLink()">Copy</button>
+        </div>
+        
+        <div class="form-group" style="text-align: left;">
+          <label>Multisig Address</label>
+          <input type="text" id="multisig-address" readonly style="font-family: monospace;">
+        </div>
+        
+        <button class="btn btn-primary" onclick="goToRoom()">
+          Open Coordination Room →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let currentStep = 1;
+    let selectedChain = 'bitcoin-mainnet';
+    let selectedThreshold = 2;
+    let createdProposalId = null;
+    
+    // Chain selection
+    document.querySelectorAll('.chain-option').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.chain-option').forEach(e => e.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedChain = el.dataset.chain;
+      });
+    });
+    
+    // Threshold selection
+    function updateThresholdOptions() {
+      const agents = document.querySelectorAll('.agent-input');
+      const count = agents.length;
+      const container = document.getElementById('threshold-selector');
+      
+      container.innerHTML = '';
+      for (let i = 2; i <= count; i++) {
+        const div = document.createElement('div');
+        div.className = 'threshold-option' + (i === selectedThreshold ? ' selected' : '');
+        div.dataset.threshold = i;
+        div.innerHTML = `<div class="number">${i}</div><div class="label">of ${count}</div>`;
+        div.addEventListener('click', () => {
+          document.querySelectorAll('.threshold-option').forEach(e => e.classList.remove('selected'));
+          div.classList.add('selected');
+          selectedThreshold = i;
+        });
+        container.appendChild(div);
+      }
+      
+      if (selectedThreshold > count) {
+        selectedThreshold = count;
+      }
+    }
+    
+    // Agent management
+    function addAgent() {
+      const list = document.getElementById('agent-list');
+      const count = list.children.length + 1;
+      const div = document.createElement('div');
+      div.className = 'agent-item';
+      div.innerHTML = `
+        <div class="agent-number">${count}</div>
+        <input type="text" class="agent-input" placeholder="Agent ID">
+        <button class="remove-agent" onclick="removeAgent(this)">×</button>
+      `;
+      list.appendChild(div);
+      updateThresholdOptions();
+    }
+    
+    function removeAgent(btn) {
+      const list = document.getElementById('agent-list');
+      if (list.children.length > 2) {
+        btn.closest('.agent-item').remove();
+        // Renumber
+        list.querySelectorAll('.agent-number').forEach((el, i) => {
+          el.textContent = i + 1;
+        });
+        updateThresholdOptions();
+      }
+    }
+    
+    // Navigation
+    function nextStep(from) {
+      if (from === 2) {
+        // Validate agents
+        const agents = Array.from(document.querySelectorAll('.agent-input'))
+          .map(el => el.value.trim())
+          .filter(v => v);
+        
+        if (agents.length < 2) {
+          alert('Please add at least 2 signers');
+          return;
+        }
+        
+        const name = document.getElementById('multisig-name').value.trim();
+        if (!name) {
+          alert('Please enter a multisig name');
+          return;
+        }
+      }
+      
+      document.getElementById(`card-${from}`).classList.add('hidden');
+      document.getElementById(`card-${from + 1}`).classList.remove('hidden');
+      document.getElementById(`step-${from}`).classList.remove('active');
+      document.getElementById(`step-${from}`).classList.add('complete');
+      document.getElementById(`step-${from + 1}`).classList.add('active');
+      currentStep = from + 1;
+    }
+    
+    function prevStep(from) {
+      document.getElementById(`card-${from}`).classList.add('hidden');
+      document.getElementById(`card-${from - 1}`).classList.remove('hidden');
+      document.getElementById(`step-${from}`).classList.remove('active');
+      document.getElementById(`step-${from - 1}`).classList.remove('complete');
+      document.getElementById(`step-${from - 1}`).classList.add('active');
+      currentStep = from - 1;
+    }
+    
+    // Create multisig
+    async function createMultisig() {
+      const btn = document.getElementById('create-btn');
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error-message');
+      
+      error.classList.add('hidden');
+      btn.classList.add('hidden');
+      loading.classList.remove('hidden');
+      
+      try {
+        const agents = Array.from(document.querySelectorAll('.agent-input'))
+          .map(el => el.value.trim())
+          .filter(v => v);
+        
+        const name = document.getElementById('multisig-name').value.trim();
+        const recipient = document.getElementById('recipient').value.trim();
+        const amount = parseInt(document.getElementById('amount').value) || 0;
+        const note = document.getElementById('note').value.trim();
+        
+        // Create multisig
+        const msRes = await fetch('/v1/multisigs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name,
+            chainId: selectedChain,
+            agentIds: agents,
+            threshold: selectedThreshold,
+          }),
+        });
+        
+        const msData = await msRes.json();
+        
+        if (!msData.success) {
+          throw new Error(msData.error?.message || 'Failed to create multisig');
+        }
+        
+        const multisig = msData.data;
+        
+        // Create proposal if recipient specified
+        if (recipient && amount > 0) {
+          const propRes = await fetch('/v1/proposals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              multisigId: multisig.id,
+              outputs: [{ address: recipient, amount }],
+              note,
+            }),
+          });
+          
+          const propData = await propRes.json();
+          
+          if (propData.success) {
+            createdProposalId = propData.data.id;
+          }
+        }
+        
+        // Show success
+        document.getElementById('card-3').classList.add('hidden');
+        document.getElementById('card-success').classList.remove('hidden');
+        document.getElementById('step-3').classList.remove('active');
+        document.getElementById('step-3').classList.add('complete');
+        
+        const shareUrl = createdProposalId 
+          ? `${window.location.origin}/p/${createdProposalId}`
+          : `${window.location.origin}/m/${multisig.id}`;
+        
+        document.getElementById('share-url').value = shareUrl;
+        document.getElementById('multisig-address').value = multisig.address;
+        
+      } catch (err) {
+        error.textContent = err.message;
+        error.classList.remove('hidden');
+        btn.classList.remove('hidden');
+        loading.classList.add('hidden');
+      }
+    }
+    
+    function copyLink() {
+      const input = document.getElementById('share-url');
+      input.select();
+      document.execCommand('copy');
+      
+      const btn = event.target;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 2000);
+    }
+    
+    function goToRoom() {
+      const url = document.getElementById('share-url').value;
+      window.location.href = url;
+    }
+    
+    // Init
+    updateThresholdOptions();
+  </script>
+</body>
+</html>

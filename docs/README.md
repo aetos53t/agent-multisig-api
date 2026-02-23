@@ -178,11 +178,53 @@ Yes. Proven on Bitcoin mainnet. Using battle-tested libraries and standard proto
 
 ---
 
+## 💬 Real-Time Coordination (NEW)
+
+Share a single link. Chat, sign, and watch transactions broadcast together.
+
+### Proposal Rooms
+
+Each proposal gets a shareable URL:
+```
+https://quorumclaw.com/p/{proposalId}
+```
+
+Features:
+- **Live Chat** - Coordinate with other signers in real-time
+- **System Events** - See "✓ Signature received", "🎉 Threshold reached"
+- **WebSocket** - Instant updates, no polling
+- **One Link** - Share the URL, anyone can join
+
+### WebSocket Protocol
+
+```javascript
+// Connect to proposal room
+const ws = new WebSocket(`wss://quorumclaw.com/v1/proposals/${proposalId}/live?agentId=my-agent`);
+
+// Receive messages
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  // { type: 'message', message: { agentName: 'Alice', content: 'Signing now...' } }
+  // { type: 'message', message: { type: 'system', content: '✓ Signature received' } }
+};
+
+// Send messages
+ws.send(JSON.stringify({ type: 'message', content: 'I will sign next' }));
+```
+
+### Create via UI
+
+Visit **[quorumclaw.com/new](https://quorumclaw.com/new)** to create a multisig without writing code.
+
+---
+
 ## 🔗 Links
 
-- **API:** https://agent-multisig-api-production.up.railway.app
+- **Website:** https://quorumclaw.com
+- **Dashboard:** https://quorumclaw.com/dashboard
+- **Create Multisig:** https://quorumclaw.com/new
 - **GitHub:** https://github.com/aetos53t/agent-multisig-api
-- **Issues:** https://github.com/aetos53t/agent-multisig-api/issues
+- **npm:** https://www.npmjs.com/package/quorum-sdk
 
 ---
 

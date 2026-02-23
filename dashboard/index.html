@@ -319,6 +319,7 @@
       <button class="tab active" onclick="showTab('multisigs')">Multisigs</button>
       <button class="tab" onclick="showTab('proposals')">Proposals</button>
       <button class="tab" onclick="showTab('agents')">Agents</button>
+      <button class="tab" onclick="showTab('rooms')">🟢 Active Rooms</button>
     </div>
 
     <div class="card">
@@ -331,7 +332,7 @@
   <script>
     const API_BASE = '';
     let currentTab = 'multisigs';
-    let data = { agents: [], multisigs: [], proposals: [] };
+    let data = { agents: [], multisigs: [], proposals: [], rooms: [] };
 
     async function fetchHealth() {
       try {
@@ -369,13 +370,15 @@
 
     async function fetchData() {
       try {
-        const [multisigs, agents] = await Promise.all([
+        const [multisigs, agents, rooms] = await Promise.all([
           fetch(`${API_BASE}/v1/multisigs`).then(r => r.json()),
           fetch(`${API_BASE}/v1/agents`).then(r => r.json()),
+          fetch(`${API_BASE}/v1/rooms`).then(r => r.json()).catch(() => ({ data: { rooms: [] } })),
         ]);
         
         data.multisigs = multisigs.data || [];
         data.agents = agents.data || [];
+        data.rooms = rooms.data?.rooms || [];
         
         // Fetch proposals for each multisig
         data.proposals = [];
@@ -496,6 +499,35 @@
                   <td class="mono truncate" title="${a.publicKey}">${a.publicKey.slice(0, 16)}...</td>
                   <td>${a.webhookUrl ? '✓' : '-'}</td>
                   <td class="mono">${new Date(a.createdAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+      
+      if (currentTab === 'rooms') {
+        if (!data.rooms || data.rooms.length === 0) {
+          content.innerHTML = '<div class="empty">No active rooms. Rooms are created when agents connect to proposals.</div>';
+          return;
+        }
+        content.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Proposal ID</th>
+                <th>Connected</th>
+                <th>Messages</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.rooms.map(r => `
+                <tr>
+                  <td class="mono">${r.proposalId.slice(0, 8)}...</td>
+                  <td><span class="badge healthy">${r.subscribers} online</span></td>
+                  <td>${r.messageCount} messages</td>
+                  <td><a href="/p/${r.proposalId}" target="_blank" style="color: var(--pink);">Open Room →</a></td>
                 </tr>
               `).join('')}
             </tbody>

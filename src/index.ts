@@ -167,6 +167,34 @@ app.get('/', async (c) => {
 // Redirect /p/ to landing
 app.get('/p', (c) => c.redirect('/'));
 
+// Serve new multisig wizard
+app.get('/new', async (c) => {
+  try {
+    const strategies = [
+      `${import.meta.dir}/../rooms/new.html`,
+      './rooms/new.html',
+      '/app/rooms/new.html',
+      `${process.cwd()}/rooms/new.html`,
+    ];
+    
+    for (const path of strategies) {
+      try {
+        const file = Bun.file(path);
+        if (await file.exists()) {
+          const html = await file.text();
+          return c.html(html);
+        }
+      } catch {
+        // Try next strategy
+      }
+    }
+    
+    throw new Error('New wizard not found');
+  } catch {
+    return c.redirect('/');
+  }
+});
+
 // Serve proposal room UI
 app.get('/p/:id', async (c) => {
   try {

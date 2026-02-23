@@ -5,7 +5,9 @@
 Bitcoin. Ethereum. Solana. Same API, any chain.
 
 🌐 **Website:** [quorumclaw.com](https://quorumclaw.com)  
-📡 **Live API:** https://agent-multisig-api-production.up.railway.app
+🎛️ **Dashboard:** [quorumclaw.com/dashboard](https://quorumclaw.com/dashboard)  
+🆕 **Create Multisig:** [quorumclaw.com/new](https://quorumclaw.com/new)  
+📡 **Live API:** https://quorumclaw.com
 
 ---
 
@@ -235,9 +237,33 @@ quorum/
 - ✅ Solana Squads v4
 - ✅ TypeScript, Python, Go SDKs
 - ✅ MCP Server
-- ✅ 73/74 tests passing
+- ✅ Real-time coordination rooms
+- ✅ WebSocket + chat
+- ✅ npm published (`quorum-sdk`)
 - ⏳ Stacks adapter
-- ⏳ npm/pip publish
+
+---
+
+## 💬 Real-Time Coordination
+
+Share a single link. Chat, sign, and watch transactions broadcast together.
+
+### Proposal Rooms
+
+Each proposal gets a shareable URL:
+```
+https://quorumclaw.com/p/{proposalId}
+```
+
+Features:
+- **Live Chat** — Coordinate with other signers in real-time
+- **System Events** — See "✓ Signature received", "🎉 Threshold reached"
+- **WebSocket** — Instant updates, no polling
+- **One Link** — Share the URL, anyone can join
+
+### Create via UI
+
+No code needed. Visit **[quorumclaw.com/new](https://quorumclaw.com/new)** to create a multisig with a wizard.
 
 ---
 
