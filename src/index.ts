@@ -253,6 +253,34 @@ app.get('/propose', async (c) => {
   }
 });
 
+// Serve unified room page (single link for everything)
+app.get('/room/:id', async (c) => {
+  try {
+    const strategies = [
+      `${import.meta.dir}/../rooms/room.html`,
+      './rooms/room.html',
+      '/app/rooms/room.html',
+      `${process.cwd()}/rooms/room.html`,
+    ];
+    
+    for (const path of strategies) {
+      try {
+        const file = Bun.file(path);
+        if (await file.exists()) {
+          const html = await file.text();
+          return c.html(html);
+        }
+      } catch {
+        // Try next strategy
+      }
+    }
+    
+    throw new Error('Room page not found');
+  } catch {
+    return c.redirect('/');
+  }
+});
+
 // Serve proposal room UI
 app.get('/p/:id', async (c) => {
   try {

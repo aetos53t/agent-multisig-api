@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quorum Room</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0a0a0a; }
+    .card { background: #111; border: 1px solid #222; }
+    .btn-pink { background: #ec4899; }
+    .btn-pink:hover { background: #db2777; }
+    .btn-gray { background: #333; }
+    .btn-gray:hover { background: #444; }
+    .glow { box-shadow: 0 0 20px rgba(236, 72, 153, 0.3); }
+  </style>
+</head>
+<body class="text-white min-h-screen p-4">
+  <div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <a href="/" class="text-2xl font-bold text-pink-500">⚡ QUORUM</a>
+      <span id="status-badge" class="px-3 py-1 rounded-full text-sm bg-yellow-500/20 text-yellow-400">Loading...</span>
+    </div>
+
+    <!-- Room Info Card -->
+    <div id="room-card" class="card rounded-xl p-6 mb-6">
+      <div id="loading" class="text-center py-8 text-gray-400">Loading room...</div>
+      
+      <!-- Room content will be injected here -->
+      <div id="room-content" class="hidden">
+        <!-- Name -->
+        <h1 id="room-name" class="text-2xl font-bold mb-2">Loading...</h1>
+        <p id="room-threshold" class="text-gray-400 mb-6"></p>
+
+        <!-- Address (when ready) -->
+        <div id="address-section" class="hidden mb-6 p-4 bg-black/50 rounded-lg">
+          <div class="text-sm text-gray-400 mb-1">Bitcoin Address</div>
+          <div id="address" class="font-mono text-sm break-all text-pink-400"></div>
+          <div class="flex items-center gap-4 mt-3">
+            <span id="balance" class="text-lg font-bold">-- sats</span>
+            <button onclick="refreshBalance()" class="text-sm text-gray-400 hover:text-white">↻ Refresh</button>
+          </div>
+        </div>
+
+        <!-- Signers -->
+        <div class="mb-6">
+          <h3 class="text-sm text-gray-400 mb-3">Signers</h3>
+          <div id="signers-list" class="space-y-2"></div>
+        </div>
+
+        <!-- Join Section (when slots available) -->
+        <div id="join-section" class="hidden border-t border-gray-800 pt-6 mt-6">
+          <h3 class="font-semibold mb-4">🔑 Join this Multisig</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Your Name</label>
+              <input type="text" id="join-name" placeholder="e.g. Arc" 
+                class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 focus:border-pink-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Your Public Key (32-byte x-only hex)</label>
+              <input type="text" id="join-pubkey" placeholder="65ed13c9321e081a..." 
+                class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 font-mono text-sm focus:border-pink-500 focus:outline-none">
+            </div>
+            <button onclick="joinRoom()" class="btn-pink w-full py-3 rounded-lg font-semibold">
+              Join & Generate Address
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proposals Section (when address exists) -->
+    <div id="proposals-section" class="hidden">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold">Proposals</h2>
+        <button onclick="showNewProposal()" class="btn-pink px-4 py-2 rounded-lg text-sm font-semibold">
+          + New Proposal
+        </button>
+      </div>
+
+      <!-- New Proposal Form -->
+      <div id="new-proposal-form" class="hidden card rounded-xl p-6 mb-4">
+        <h3 class="font-semibold mb-4">Create Proposal</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Recipient Address</label>
+            <input type="text" id="prop-recipient" placeholder="bc1q..." 
+              class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 font-mono text-sm focus:border-pink-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Amount (sats)</label>
+            <input type="number" id="prop-amount" placeholder="5000" 
+              class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 focus:border-pink-500 focus:outline-none">
+          </div>
+          <div class="flex gap-2">
+            <button onclick="createProposal()" class="btn-pink flex-1 py-2 rounded-lg font-semibold">Create</button>
+            <button onclick="hideNewProposal()" class="btn-gray px-4 py-2 rounded-lg">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Proposals List -->
+      <div id="proposals-list" class="space-y-3">
+        <div class="text-gray-500 text-center py-4">No proposals yet</div>
+      </div>
+    </div>
+
+    <!-- Sign Modal -->
+    <div id="sign-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+      <div class="card rounded-xl p-6 max-w-md w-full">
+        <h3 class="font-semibold mb-4">Sign Proposal</h3>
+        <div class="mb-4 p-3 bg-black/50 rounded-lg">
+          <div class="text-sm text-gray-400 mb-1">Sighash to sign:</div>
+          <div id="modal-sighash" class="font-mono text-xs break-all text-pink-400"></div>
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm text-gray-400 mb-1">Your Agent ID</label>
+          <input type="text" id="modal-agent-id" placeholder="invite-xxxxx-yyyyyy" 
+            class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 font-mono text-sm focus:border-pink-500 focus:outline-none">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm text-gray-400 mb-1">Your Signature (64-byte Schnorr hex)</label>
+          <input type="text" id="modal-signature" placeholder="e667de584d0b52b9..." 
+            class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 font-mono text-sm focus:border-pink-500 focus:outline-none">
+        </div>
+        <div class="flex gap-2">
+          <button onclick="submitSignature()" class="btn-pink flex-1 py-2 rounded-lg font-semibold">Sign</button>
+          <button onclick="closeSignModal()" class="btn-gray px-4 py-2 rounded-lg">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    const inviteId = window.location.pathname.split('/').pop();
+    
+    let roomData = null;
+    let multisigData = null;
+    let proposalsData = [];
+    let currentProposalId = null;
+
+    async function loadRoom() {
+      try {
+        // Load invite data
+        const inviteRes = await fetch(`${API}/v1/invites/${inviteId}`);
+        const inviteJson = await inviteRes.json();
+        
+        if (!inviteJson.success) {
+          document.getElementById('loading').innerHTML = `<span class="text-red-400">Room not found</span>`;
+          return;
+        }
+        
+        roomData = inviteJson.data;
+        renderRoom();
+        
+        // If multisig exists, load it and proposals
+        if (roomData.multisigId) {
+          await loadMultisig();
+          await loadProposals();
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById('loading').innerHTML = `<span class="text-red-400">Error loading room</span>`;
+      }
+    }
+
+    async function loadMultisig() {
+      if (!roomData?.multisigId) return;
+      
+      const res = await fetch(`${API}/v1/multisigs/${roomData.multisigId}`);
+      const json = await res.json();
+      if (json.success) {
+        multisigData = json.data;
+        renderAddress();
+      }
+    }
+
+    async function loadProposals() {
+      if (!roomData?.multisigId) return;
+      
+      const res = await fetch(`${API}/v1/proposals?multisigId=${roomData.multisigId}`);
+      const json = await res.json();
+      if (json.success) {
+        proposalsData = json.data || [];
+        renderProposals();
+      }
+    }
+
+    function renderRoom() {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('room-content').classList.remove('hidden');
+      
+      // Name & threshold
+      document.getElementById('room-name').textContent = roomData.name || `Room ${inviteId.slice(0, 8)}`;
+      document.getElementById('room-threshold').textContent = `${roomData.threshold}-of-${roomData.totalSlots} Multisig`;
+      
+      // Status badge
+      const filledSlots = roomData.slots.filter(s => s.filled).length;
+      const badge = document.getElementById('status-badge');
+      if (filledSlots === roomData.totalSlots) {
+        badge.className = 'px-3 py-1 rounded-full text-sm bg-green-500/20 text-green-400';
+        badge.textContent = '✓ Ready';
+      } else {
+        badge.className = 'px-3 py-1 rounded-full text-sm bg-yellow-500/20 text-yellow-400';
+        badge.textContent = `${filledSlots}/${roomData.totalSlots} Joined`;
+      }
+      
+      // Signers list
+      const signersList = document.getElementById('signers-list');
+      signersList.innerHTML = roomData.slots.map((slot, i) => `
+        <div class="flex items-center gap-3 p-3 bg-black/30 rounded-lg">
+          <div class="w-8 h-8 rounded-full ${slot.filled ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-500'} flex items-center justify-center text-sm">
+            ${slot.filled ? '✓' : (i + 1)}
+          </div>
+          <div class="flex-1">
+            ${slot.filled 
+              ? `<div class="font-medium">${slot.name}</div>
+                 <div class="text-xs text-gray-500 font-mono">${slot.agentId || ''}</div>`
+              : `<div class="text-gray-500">Waiting for signer...</div>`
+            }
+          </div>
+        </div>
+      `).join('');
+      
+      // Show join section if slots available
+      const hasEmptySlot = roomData.slots.some(s => !s.filled);
+      if (hasEmptySlot) {
+        document.getElementById('join-section').classList.remove('hidden');
+      } else {
+        document.getElementById('join-section').classList.add('hidden');
+      }
+      
+      // Show proposals section if multisig exists
+      if (roomData.multisigId) {
+        document.getElementById('proposals-section').classList.remove('hidden');
+      }
+    }
+
+    function renderAddress() {
+      if (!multisigData?.address) return;
+      
+      document.getElementById('address-section').classList.remove('hidden');
+      document.getElementById('address').textContent = multisigData.address;
+      
+      if (multisigData.balance !== undefined) {
+        document.getElementById('balance').textContent = `${multisigData.balance.toLocaleString()} sats`;
+      }
+    }
+
+    async function refreshBalance() {
+      if (!roomData?.multisigId) return;
+      
+      document.getElementById('balance').textContent = 'Loading...';
+      const res = await fetch(`${API}/v1/multisigs/${roomData.multisigId}/balance`);
+      const json = await res.json();
+      if (json.success) {
+        document.getElementById('balance').textContent = `${json.data.confirmed.toLocaleString()} sats`;
+      }
+    }
+
+    function renderProposals() {
+      const list = document.getElementById('proposals-list');
+      
+      if (proposalsData.length === 0) {
+        list.innerHTML = '<div class="text-gray-500 text-center py-4">No proposals yet</div>';
+        return;
+      }
+      
+      list.innerHTML = proposalsData.map(p => {
+        const statusColors = {
+          pending: 'bg-yellow-500/20 text-yellow-400',
+          ready: 'bg-blue-500/20 text-blue-400',
+          finalized: 'bg-green-500/20 text-green-400',
+          broadcast: 'bg-green-500/20 text-green-400',
+          failed: 'bg-red-500/20 text-red-400',
+        };
+        const statusColor = statusColors[p.status] || 'bg-gray-500/20 text-gray-400';
+        
+        const totalOut = p.outputs?.reduce((s, o) => s + Number(o.amount), 0) || 0;
+        
+        return `
+          <div class="card rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-mono text-sm text-gray-400">${p.id.slice(0, 8)}...</span>
+              <span class="px-2 py-1 rounded text-xs ${statusColor}">${p.status}</span>
+            </div>
+            <div class="text-lg font-bold mb-1">${totalOut.toLocaleString()} sats</div>
+            <div class="text-sm text-gray-400 mb-3">
+              → ${p.outputs?.[0]?.address?.slice(0, 20) || '?'}...
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-500">
+                ${p.signatures?.length || 0}/${roomData.threshold} signatures
+              </span>
+              ${p.status === 'pending' || p.status === 'ready' 
+                ? `<button onclick="openSignModal('${p.id}')" class="btn-pink px-3 py-1 rounded text-sm">Sign</button>`
+                : p.txid 
+                  ? `<a href="https://mempool.space/tx/${p.txid}" target="_blank" class="text-pink-400 text-sm hover:underline">View TX ↗</a>`
+                  : ''
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function joinRoom() {
+      const name = document.getElementById('join-name').value.trim();
+      const pubkey = document.getElementById('join-pubkey').value.trim();
+      
+      if (!name || !pubkey) {
+        alert('Please enter name and public key');
+        return;
+      }
+      
+      if (pubkey.length !== 64) {
+        alert('Public key must be 64 hex characters (32 bytes)');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API}/v1/invites/${inviteId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, publicKey: pubkey }),
+        });
+        const json = await res.json();
+        
+        if (json.success) {
+          alert(`Joined! Your agent ID: ${json.data.agentId}\n\nSave this - you'll need it to sign.`);
+          await loadRoom();
+          if (roomData.multisigId) {
+            await loadMultisig();
+          }
+        } else {
+          alert(`Error: ${json.error?.message || 'Failed to join'}`);
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    function showNewProposal() {
+      document.getElementById('new-proposal-form').classList.remove('hidden');
+    }
+
+    function hideNewProposal() {
+      document.getElementById('new-proposal-form').classList.add('hidden');
+    }
+
+    async function createProposal() {
+      const recipient = document.getElementById('prop-recipient').value.trim();
+      const amount = parseInt(document.getElementById('prop-amount').value);
+      
+      if (!recipient || !amount) {
+        alert('Please enter recipient and amount');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API}/v1/proposals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            multisigId: roomData.multisigId,
+            outputs: [{ address: recipient, amount }],
+          }),
+        });
+        const json = await res.json();
+        
+        if (json.success) {
+          hideNewProposal();
+          document.getElementById('prop-recipient').value = '';
+          document.getElementById('prop-amount').value = '';
+          await loadProposals();
+          
+          // Show sighash
+          if (json.data.sighashes?.[0]) {
+            alert(`Proposal created!\n\nSighash to sign:\n${json.data.sighashes[0].sighash}`);
+          }
+        } else {
+          alert(`Error: ${json.error?.message || 'Failed to create proposal'}`);
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    async function openSignModal(proposalId) {
+      currentProposalId = proposalId;
+      
+      // Fetch proposal to get sighash
+      const res = await fetch(`${API}/v1/proposals/${proposalId}`);
+      const json = await res.json();
+      
+      if (json.success && json.data.sighashes?.[0]) {
+        document.getElementById('modal-sighash').textContent = json.data.sighashes[0].sighash;
+      } else {
+        // Fallback - compute from creation
+        document.getElementById('modal-sighash').textContent = 'Sighash not available - check proposal details';
+      }
+      
+      document.getElementById('sign-modal').classList.remove('hidden');
+    }
+
+    function closeSignModal() {
+      document.getElementById('sign-modal').classList.add('hidden');
+      currentProposalId = null;
+    }
+
+    async function submitSignature() {
+      const agentId = document.getElementById('modal-agent-id').value.trim();
+      const signature = document.getElementById('modal-signature').value.trim();
+      
+      if (!agentId || !signature) {
+        alert('Please enter agent ID and signature');
+        return;
+      }
+      
+      if (signature.length !== 128) {
+        alert('Signature must be 128 hex characters (64 bytes)');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API}/v1/proposals/${currentProposalId}/sign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId, signature }),
+        });
+        const json = await res.json();
+        
+        if (json.success) {
+          closeSignModal();
+          document.getElementById('modal-agent-id').value = '';
+          document.getElementById('modal-signature').value = '';
+          await loadProposals();
+          
+          if (json.data.thresholdMet) {
+            alert('✓ Threshold met! Transaction finalized.');
+          } else {
+            alert(`✓ Signature added. ${json.data.signatureCount}/${roomData.threshold} signatures.`);
+          }
+        } else {
+          alert(`Error: ${json.error?.message || 'Failed to sign'}`);
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    }
+
+    // Load on start
+    loadRoom();
+  </script>
+</body>
+</html>

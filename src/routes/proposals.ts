@@ -850,13 +850,26 @@ router.get('/', async (c) => {
   const status = c.req.query('status');
   const multisigId = c.req.query('multisigId');
   
-  // For now, use in-memory. Full implementation would filter in DB
+  // If multisigId provided, return proposals for that multisig
+  if (multisigId) {
+    const proposals = await repo.getProposalsForMultisig(multisigId);
+    return c.json<ApiResponse<any>>({
+      success: true,
+      data: proposals.map(p => ({
+        ...p,
+        fee: p.fee?.toString(),
+        outputs: p.outputs.map(o => ({ ...o, amount: o.amount.toString() })),
+      })),
+    });
+  }
+  
+  // Otherwise return stats
   const stats = await repo.getStats();
   
   return c.json<ApiResponse<any>>({
     success: true,
     data: {
-      message: 'Use /multisigs/:id/proposals or /agents/:id/proposals for filtered lists',
+      message: 'Use ?multisigId=xxx to filter by multisig',
       stats,
     },
   });
