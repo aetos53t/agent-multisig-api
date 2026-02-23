@@ -509,8 +509,10 @@ export function finalizePSBT(
       throw new Error(`Input ${i}: No signatures found`);
     }
     
-    // tapLeafScript[0] = [controlBlockObj, script]
-    const [controlBlockObj, script] = tapLeafScript[0] as [any, Uint8Array];
+    // tapLeafScript[0] = [controlBlockObj, scriptWithVersion]
+    // Note: btc-signer appends leafVersion (0xc0) to script - we need to strip it for witness
+    const [controlBlockObj, scriptWithVersion] = tapLeafScript[0] as [any, Uint8Array];
+    const script = scriptWithVersion.slice(0, -1); // Remove trailing leaf version byte
     
     // Build control block bytes: version || internalKey || merklePath
     const version = new Uint8Array([controlBlockObj.version]);
