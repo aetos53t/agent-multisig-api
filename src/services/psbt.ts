@@ -389,20 +389,48 @@ export function addSignatureToPSBT(input: SignPSBTInput): string {
     throw new Error(`Invalid signature length: ${signature.length} (expected 128 hex chars)`);
   }
   
-  // Add partial signature
-  // Note: For Taproot script-path, we need to add to tapScriptSig
   const sigBytes = hex.decode(signature);
   const pubkeyBytes = hex.decode(pubkey);
   
-  // The signature format for script-path is just the 64-byte sig
-  // (no sighash byte for SIGHASH_DEFAULT)
+  // Get existing input data
+  const existingInput = tx.getInput(inputIndex);
+  
+  // Get leaf hash from tapLeafScript (required for script-path signing)
+  const leafHash = existingInput.tapLeafScript?.[0]?.leafHash;
+  if (!leafHash) {
+    throw new Error('No tapLeafScript found on input - cannot add script-path signature');
+  }
+  
+  // Get existing signatures and append new one (don't overwrite)
+  const existingSigs = existingInput.tapScriptSig || [];
+  
+  // Check if this pubkey already has a signature
+  const pubkeyHex = hex.encode(pubkeyBytes);
+  const alreadySigned = existingSigs.some(s => hex.encode(s.pubKey) === pubkeyHex);
+  if (alreadySigned) {
+    console.log(`[PSBT] Pubkey ${pubkeyHex.slice(0,16)}... already has signature, skipping`);
+    return psbt; // Return unchanged
+  }
+  
+  // Build merged signature array with leafHash
+  const mergedSigs = [
+    ...existingSigs.map(s => ({
+      pubKey: s.pubKey,
+      signature: s.signature,
+      leafHash: s.leafHash || leafHash,
+    })),
+    {
+      pubKey: pubkeyBytes,
+      signature: sigBytes,
+      leafHash: leafHash,
+    },
+  ];
+  
+  console.log(`[PSBT] Adding signature for ${pubkeyHex.slice(0,16)}..., total sigs: ${mergedSigs.length}`);
+  
+  // Update with merged signatures
   tx.updateInput(inputIndex, {
-    tapScriptSig: [
-      {
-        pubKey: pubkeyBytes,
-        signature: sigBytes,
-      },
-    ],
+    tapScriptSig: mergedSigs,
   });
   
   // Return updated PSBT
