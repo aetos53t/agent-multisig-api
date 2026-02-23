@@ -576,69 +576,6 @@ export function finalizePSBT(
 /**
  * Parse and inspect a PSBT
  */
-/**
- * Extract sighashes from an existing PSBT
- * This recomputes the sighash that agents need to sign
- */
-export function getSighashesFromPSBT(psbtBase64: string): {
-  sighash: string;
-  inputIndex: number;
-}[] {
-  const psbtBytes = Uint8Array.from(atob(psbtBase64), c => c.charCodeAt(0));
-  const tx = btc.Transaction.fromPSBT(psbtBytes);
-  
-  const sighashes: { sighash: string; inputIndex: number }[] = [];
-  
-  for (let inputIndex = 0; inputIndex < tx.inputsLength; inputIndex++) {
-    const input = tx.getInput(inputIndex);
-    
-    // Get amounts and scripts for all inputs
-    const amounts: bigint[] = [];
-    const prevOutScripts: Uint8Array[] = [];
-    
-    for (let i = 0; i < tx.inputsLength; i++) {
-      const inp = tx.getInput(i);
-      amounts.push(inp.witnessUtxo?.amount || 0n);
-      prevOutScripts.push(inp.witnessUtxo?.script || new Uint8Array());
-    }
-    
-    // Get the leaf script from tapLeafScript
-    const tapLeafScript = input.tapLeafScript;
-    if (!tapLeafScript || tapLeafScript.length === 0) {
-      console.warn(`[getSighashesFromPSBT] No tapLeafScript for input ${inputIndex}`);
-      continue;
-    }
-    
-    // tapLeafScript[0] is [controlBlock, scriptWithVersion]
-    const [, scriptWithVersion] = tapLeafScript[0] as [any, Uint8Array];
-    // Remove trailing version byte that btc-signer appends
-    const leafScript = scriptWithVersion.slice(0, -1);
-    
-    try {
-      // Compute sighash using btc-signer's native method
-      // preimageWitnessV1 returns the final tagged hash
-      const sighashBytes = (tx as any).preimageWitnessV1(
-        inputIndex,
-        prevOutScripts,
-        btc.SigHash.DEFAULT,
-        amounts,
-        undefined,  // codeSeparator
-        leafScript,
-        TAPSCRIPT_LEAF_VERSION
-      );
-      
-      sighashes.push({
-        sighash: hex.encode(sighashBytes),
-        inputIndex,
-      });
-    } catch (e) {
-      console.error(`[getSighashesFromPSBT] Failed to compute sighash for input ${inputIndex}:`, e);
-    }
-  }
-  
-  return sighashes;
-}
-
 export function inspectPSBT(psbt: string): {
   inputs: {
     txid: string;
@@ -696,5 +633,4 @@ export default {
   checkPSBTThreshold,
   finalizePSBT,
   inspectPSBT,
-  getSighashesFromPSBT,
 };

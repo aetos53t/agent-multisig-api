@@ -19,7 +19,7 @@ import type {
   ApiResponse,
   TxOutput,
 } from '../types';
-import { createPSBT, addSignatureToPSBT, finalizePSBT, inspectPSBT, getSighashesFromPSBT } from '../services/psbt';
+import { createPSBT, addSignatureToPSBT, finalizePSBT, inspectPSBT } from '../services/psbt';
 import { getConfirmedUtxos, getAllUtxos, getFeeRate, broadcastTransaction, p2trScriptPubkey } from '../services/bitcoin';
 import { compressedToXOnly } from '../services/taproot';
 import repo from '../db/repository';
@@ -341,16 +341,6 @@ router.get('/:id', async (c) => {
   
   const multisig = await repo.getMultisig(proposal.multisigId);
   
-  // Compute sighashes from the PSBT so agents know what to sign
-  let sighashes: { sighash: string; inputIndex: number }[] = [];
-  try {
-    if (proposal.unsignedTx) {
-      sighashes = getSighashesFromPSBT(proposal.unsignedTx);
-    }
-  } catch (e) {
-    console.warn('Could not extract sighashes from PSBT:', e);
-  }
-  
   // Don't expose passwordHash
   const { passwordHash, ...proposalData } = proposal;
   
@@ -369,8 +359,6 @@ router.get('/:id', async (c) => {
       remainingSigners: proposal.requiredSigners.filter(
         s => !proposal.signatures.find(sig => sig.agentId === s)
       ),
-      // Sighashes for signing
-      sighashes,
       // Alias for convenience
       txHex: proposal.finalTx,
     },

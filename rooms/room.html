@@ -290,7 +290,7 @@
         return `
           <div class="card rounded-lg p-4">
             <div class="flex items-center justify-between mb-2">
-              <a href="/p/${p.id}" class="font-mono text-sm text-pink-400 hover:underline">${p.id.slice(0, 8)}... →</a>
+              <span class="font-mono text-sm text-gray-400">${p.id.slice(0, 8)}...</span>
               <span class="px-2 py-1 rounded text-xs ${statusColor}">${p.status}</span>
             </div>
             <div class="text-lg font-bold mb-1">${totalOut.toLocaleString()} sats</div>
@@ -302,7 +302,7 @@
                 ${p.signatures?.length || 0}/${roomData.threshold} signatures
               </span>
               ${p.status === 'pending' || p.status === 'ready' 
-                ? `<a href="/p/${p.id}" class="btn-pink px-3 py-1 rounded text-sm">Open Room</a>`
+                ? `<button onclick="openSignModal('${p.id}')" class="btn-pink px-3 py-1 rounded text-sm">Sign</button>`
                 : p.txid 
                   ? `<a href="https://mempool.space/tx/${p.txid}" target="_blank" class="text-pink-400 text-sm hover:underline">View TX ↗</a>`
                   : ''
@@ -381,10 +381,12 @@
           hideNewProposal();
           document.getElementById('prop-recipient').value = '';
           document.getElementById('prop-amount').value = '';
+          await loadProposals();
           
-          // Redirect to the real-time proposal room for signing coordination
-          const proposalId = json.data.id;
-          window.location.href = `/p/${proposalId}`;
+          // Show sighash
+          if (json.data.sighashes?.[0]) {
+            alert(`Proposal created!\n\nSighash to sign:\n${json.data.sighashes[0].sighash}`);
+          }
         } else {
           alert(`Error: ${json.error?.message || 'Failed to create proposal'}`);
         }

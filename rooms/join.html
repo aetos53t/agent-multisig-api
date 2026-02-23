@@ -562,20 +562,11 @@
       statusEl.textContent = 'Fetching...';
       
       try {
-        // Add timeout to prevent hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const res = await fetch(`/v1/multisigs/${pendingMultisig.multisigId}`, {
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        
+        const res = await fetch(`/v1/multisigs/${pendingMultisig.multisigId}`);
         const data = await res.json();
         
-        // Use optional chaining for safer access
-        const bal = data?.data?.balance;
-        if (data?.success && bal) {
+        if (data.success && data.data.balance) {
+          const bal = data.data.balance;
           const confirmed = parseInt(bal.confirmed || '0');
           const unconfirmed = parseInt(bal.unconfirmed || '0');
           const total = parseInt(bal.total || '0');
@@ -594,9 +585,8 @@
           statusEl.textContent = 'Send BTC to the address above';
         }
       } catch (e) {
-        console.error('Balance fetch error:', e);
         balanceEl.textContent = '—';
-        statusEl.textContent = e.name === 'AbortError' ? 'Request timed out' : 'Could not fetch balance';
+        statusEl.textContent = 'Could not fetch balance';
       }
     }
     
