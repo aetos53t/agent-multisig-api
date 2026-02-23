@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quorum - Proposal Room</title>
+  <title>Quorum - Proposal</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -25,15 +25,14 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-    }
-    
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
       padding: 24px;
     }
     
-    /* Header */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
     .header {
       display: flex;
       align-items: center;
@@ -63,683 +62,401 @@
       font-size: 20px;
     }
     
-    .logo-text {
-      font-size: 20px;
-      font-weight: 700;
-    }
+    .logo-text { font-size: 20px; font-weight: 700; }
     
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 999px;
-      font-size: 14px;
-      font-weight: 600;
-    }
-    
-    .status-badge.pending { background: var(--yellow)/20; color: var(--yellow); border: 1px solid var(--yellow); }
-    .status-badge.ready { background: var(--blue)/20; color: var(--blue); border: 1px solid var(--blue); }
-    .status-badge.broadcast { background: var(--green)/20; color: var(--green); border: 1px solid var(--green); }
-    .status-badge.confirmed { background: var(--green)/20; color: var(--green); border: 1px solid var(--green); }
-    
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-    
-    .status-badge.pending .status-dot { background: var(--yellow); }
-    .status-badge.ready .status-dot { background: var(--blue); }
-    .status-badge.broadcast .status-dot { background: var(--green); }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
-    /* Proposal Card */
-    .proposal-card {
+    .card {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 24px;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
     
-    .proposal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-    }
-    
-    .proposal-title {
-      font-size: 18px;
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
       font-weight: 600;
-      margin-bottom: 4px;
     }
     
-    .proposal-id {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-family: monospace;
-    }
+    .status-badge.pending { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
+    .status-badge.ready { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+    .status-badge.finalized { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+    .status-badge.broadcast { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+    .status-badge.confirmed { background: rgba(34, 197, 94, 0.15); color: var(--green); }
     
-    .proposal-amount {
-      text-align: right;
-    }
-    
-    .amount-btc {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--pink);
-    }
-    
-    .amount-usd {
-      font-size: 14px;
-      color: var(--text-muted);
-    }
-    
-    /* Signers */
-    .signers {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
+    .amount { font-size: 32px; font-weight: 700; color: var(--pink); margin: 16px 0; }
+    .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+    .value { font-family: monospace; font-size: 14px; word-break: break-all; }
+    .row { margin-bottom: 16px; }
     
     .signer {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
+      gap: 12px;
+      padding: 12px;
       background: var(--bg);
-      border-radius: 12px;
-      flex: 1;
-      min-width: 200px;
-    }
-    
-    .signer-avatar {
-      width: 40px;
-      height: 40px;
       border-radius: 10px;
-      background: var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
+      margin-bottom: 8px;
     }
     
-    .signer-info {
-      flex: 1;
-    }
-    
-    .signer-name {
-      font-weight: 600;
-      font-size: 14px;
-    }
-    
-    .signer-status {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    
-    .signer-status.signed {
-      color: var(--green);
-    }
-    
-    .signer-check {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .signer-check.signed {
-      background: var(--green);
-      color: black;
-    }
-    
-    .signer-check.pending {
-      border: 2px solid var(--border);
-    }
-    
-    /* Chat */
-    .chat-container {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      height: 400px;
-    }
-    
-    .chat-header {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .chat-title {
-      font-weight: 600;
-    }
-    
-    .chat-online {
-      font-size: 12px;
-      color: var(--green);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .chat-online::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      background: var(--green);
-      border-radius: 50%;
-    }
-    
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    
-    .message {
-      display: flex;
-      gap: 12px;
-      max-width: 85%;
-    }
-    
-    .message.system {
-      max-width: 100%;
-      justify-content: center;
-    }
-    
-    .message.system .message-content {
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 13px;
-      text-align: center;
-      padding: 8px 0;
-    }
-    
-    .message-avatar {
-      width: 32px;
-      height: 32px;
+    .signer-icon {
+      width: 36px;
+      height: 36px;
       border-radius: 8px;
-      background: var(--border);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
+      font-size: 18px;
     }
     
-    .message-body {
-      flex: 1;
-    }
+    .signer-icon.signed { background: var(--green); color: #000; }
+    .signer-icon.pending { background: var(--border); color: var(--text-muted); }
     
-    .message-header {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-    
-    .message-name {
-      font-weight: 600;
-      font-size: 13px;
-    }
-    
-    .message-time {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-    
-    .message-content {
-      background: var(--bg);
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 14px;
-      line-height: 1.4;
-    }
-    
-    .chat-input {
-      padding: 16px 20px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 12px;
-    }
-    
-    .chat-input input {
-      flex: 1;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-size: 14px;
-    }
-    
-    .chat-input input:focus {
-      outline: none;
-      border-color: var(--pink);
-    }
-    
-    .chat-input input::placeholder {
-      color: var(--text-muted);
-    }
+    .signer-info { flex: 1; }
+    .signer-name { font-weight: 600; font-size: 14px; }
+    .signer-status { font-size: 12px; color: var(--text-muted); }
+    .signer-status.signed { color: var(--green); }
     
     .btn {
-      padding: 12px 24px;
+      display: inline-block;
+      padding: 14px 24px;
       border-radius: 10px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 15px;
       cursor: pointer;
       border: none;
-      transition: all 0.2s;
+      text-decoration: none;
+      text-align: center;
     }
     
-    .btn-primary {
-      background: var(--pink);
-      color: black;
-    }
+    .btn-pink { background: var(--pink); color: #000; }
+    .btn-pink:hover { opacity: 0.9; }
+    .btn-gray { background: var(--border); color: var(--text); }
+    .btn-full { width: 100%; }
     
-    .btn-primary:hover {
-      opacity: 0.9;
-    }
-    
-    .btn-secondary {
-      background: var(--border);
-      color: var(--text);
-    }
-    
-    /* Actions */
-    .actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
-    
-    .actions .btn {
-      flex: 1;
-      padding: 16px 24px;
-      font-size: 16px;
-    }
-    
-    /* Join Form */
-    .join-form {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 400px;
-      margin: 100px auto;
-    }
-    
-    .join-form h2 {
-      margin-bottom: 8px;
-    }
-    
-    .join-form p {
-      color: var(--text-muted);
-      margin-bottom: 24px;
-    }
-    
-    .form-group {
-      margin-bottom: 16px;
-    }
-    
-    .form-group label {
-      display: block;
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-    
-    .form-group input {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-size: 14px;
-    }
-    
-    .form-group input:focus {
-      outline: none;
-      border-color: var(--pink);
-    }
-    
-    /* Connection status */
-    .connection-status {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .connection-status.connected {
-      background: var(--green)/20;
-      color: var(--green);
-      border: 1px solid var(--green);
-    }
-    
-    .connection-status.disconnected {
-      background: var(--red)/20;
-      color: var(--red);
-      border: 1px solid var(--red);
-    }
-    
-    /* Loading */
     .loading {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 60vh;
       color: var(--text-muted);
     }
     
     .spinner {
-      width: 32px;
-      height: 32px;
+      width: 40px;
+      height: 40px;
       border: 3px solid var(--border);
       border-top-color: var(--pink);
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin-right: 12px;
+      margin-bottom: 16px;
     }
     
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .error-card {
+      text-align: center;
+      padding: 40px;
     }
     
-    /* Responsive */
-    @media (max-width: 600px) {
-      .container { padding: 16px; }
-      .signers { flex-direction: column; }
-      .signer { min-width: auto; }
-      .chat-container { height: 350px; }
+    .error-icon { font-size: 48px; margin-bottom: 16px; }
+    
+    .sighash-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin: 16px 0;
     }
+    
+    .sighash-label { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+    .sighash-value { font-family: monospace; font-size: 13px; word-break: break-all; color: var(--pink); }
+    
+    .tx-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid var(--green);
+      border-radius: 10px;
+      color: var(--green);
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 16px;
+    }
+    
+    .tx-link:hover { background: rgba(34, 197, 94, 0.2); }
+    
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div id="app">
-    <!-- Loading state -->
-    <div class="loading" id="loading">
+  <div class="container">
+    <header class="header">
+      <a href="/" class="logo">
+        <div class="logo-icon">Q</div>
+        <span class="logo-text">Quorum</span>
+      </a>
+      <span id="status-badge" class="status-badge pending">Loading...</span>
+    </header>
+    
+    <!-- Loading -->
+    <div id="loading" class="loading">
       <div class="spinner"></div>
       <span>Loading proposal...</span>
     </div>
     
-    <!-- Join form (if no agentId) -->
-    <div class="join-form" id="join-form" style="display: none;">
-      <h2>Join Proposal Room</h2>
-      <p>Enter your agent credentials to join the signing coordination.</p>
-      <div class="form-group">
-        <label>Agent ID</label>
-        <input type="text" id="agent-id-input" placeholder="your-agent-id">
-      </div>
-      <button class="btn btn-primary" style="width: 100%;" onclick="joinRoom()">
-        Join Room
-      </button>
+    <!-- Error -->
+    <div id="error" class="card error-card hidden">
+      <div class="error-icon">❌</div>
+      <h2 id="error-title">Error</h2>
+      <p id="error-message" style="color: var(--text-muted); margin-top: 8px;"></p>
+      <a href="/" class="btn btn-gray" style="margin-top: 24px;">← Back to Home</a>
     </div>
     
-    <!-- Main room view -->
-    <div class="container" id="room-view" style="display: none;">
-      <header class="header">
-        <a href="/" class="logo">
-          <div class="logo-icon">Q</div>
-          <span class="logo-text">Quorum</span>
-        </a>
-        <div class="status-badge pending" id="status-badge">
-          <div class="status-dot"></div>
-          <span id="status-text">Pending</span>
+    <!-- Proposal View -->
+    <div id="proposal-view" class="hidden">
+      <!-- Amount Card -->
+      <div class="card">
+        <div class="label">Sending</div>
+        <div class="amount" id="amount">0 sats</div>
+        <div class="row">
+          <div class="label">To</div>
+          <div class="value" id="recipient">—</div>
         </div>
-      </header>
-      
-      <!-- Proposal Card -->
-      <div class="proposal-card">
-        <div class="proposal-header">
-          <div>
-            <div class="proposal-title" id="proposal-note">Send to...</div>
-            <div class="proposal-id" id="proposal-id">ID: loading...</div>
-          </div>
-          <div class="proposal-amount">
-            <div class="amount-btc" id="amount-btc">0.00000000 BTC</div>
-            <div class="amount-usd" id="amount-usd">≈ $0.00</div>
-          </div>
-        </div>
-        
-        <div class="signers" id="signers">
-          <!-- Signers will be populated here -->
+        <div class="row">
+          <div class="label">Fee</div>
+          <div class="value" id="fee">—</div>
         </div>
       </div>
       
-      <!-- Chat -->
-      <div class="chat-container">
-        <div class="chat-header">
-          <div class="chat-title">💬 Coordination</div>
-          <div class="chat-online" id="online-count">0 online</div>
-        </div>
-        <div class="chat-messages" id="messages">
-          <!-- Messages will be populated here -->
-        </div>
-        <div class="chat-input">
-          <input 
-            type="text" 
-            id="message-input" 
-            placeholder="Type a message..." 
-            onkeypress="handleKeyPress(event)"
-          >
-          <button class="btn btn-primary" onclick="sendMessage()">Send</button>
-        </div>
+      <!-- Signers Card -->
+      <div class="card">
+        <div class="label" style="margin-bottom: 12px;">Signatures (<span id="sig-count">0</span>/<span id="threshold">2</span>)</div>
+        <div id="signers-list"></div>
       </div>
       
-      <!-- Actions -->
-      <div class="actions" id="actions">
-        <button class="btn btn-primary" id="sign-btn" onclick="signProposal()">
-          ✍️ Sign Proposal
-        </button>
+      <!-- Sighash (for signers) -->
+      <div class="card" id="sighash-card">
+        <div class="label">Sighash to Sign</div>
+        <div class="sighash-box">
+          <div class="sighash-value" id="sighash">—</div>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          Sign this hash with your private key and submit below.
+        </p>
+        <div style="margin-bottom: 12px;">
+          <div class="label">Your Agent ID</div>
+          <input type="text" id="sign-agent-id" placeholder="invite-xxxxx-yyyyyy" 
+            style="width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: monospace; font-size: 14px;">
+        </div>
+        <div style="margin-bottom: 16px;">
+          <div class="label">Your Signature (64-byte Schnorr hex)</div>
+          <input type="text" id="sign-signature" placeholder="64-byte signature..." 
+            style="width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: monospace; font-size: 14px;">
+        </div>
+        <button class="btn btn-pink btn-full" onclick="submitSignature()">Submit Signature</button>
       </div>
-    </div>
-    
-    <!-- Connection status -->
-    <div class="connection-status disconnected" id="connection-status">
-      <span>●</span> Disconnected
+      
+      <!-- TX Link (after broadcast) -->
+      <a id="tx-link" class="tx-link hidden" href="#" target="_blank">
+        <span>🔗</span> View Transaction on Mempool →
+      </a>
     </div>
   </div>
 
   <script>
-    // State
-    let ws = null;
+    const API = '';
+    const proposalId = window.location.pathname.split('/').pop();
     let proposal = null;
-    let agentId = null;
-    let agentName = null;
+    let multisig = null;
+    let pollInterval = null;
     
-    // Get proposal ID from URL
-    const pathParts = window.location.pathname.split('/');
-    const proposalId = pathParts[pathParts.length - 1];
-    
-    // Check for stored agent ID
-    const storedAgentId = localStorage.getItem('quorum_agent_id');
-    
-    // Initialize
     async function init() {
       if (!proposalId || proposalId === 'p') {
-        showJoinForm();
+        showError('Invalid URL', 'No proposal ID provided');
         return;
       }
       
-      if (storedAgentId) {
-        agentId = storedAgentId;
-        connectWebSocket();
-      } else {
-        showJoinForm();
-      }
+      await loadProposal();
+      
+      // Poll for updates every 5 seconds
+      pollInterval = setInterval(loadProposal, 5000);
     }
     
-    function showJoinForm() {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('join-form').style.display = 'block';
-    }
-    
-    function joinRoom() {
-      const input = document.getElementById('agent-id-input').value.trim();
-      if (!input) {
-        alert('Please enter your Agent ID');
-        return;
-      }
-      agentId = input;
-      localStorage.setItem('quorum_agent_id', agentId);
-      document.getElementById('join-form').style.display = 'none';
-      document.getElementById('loading').style.display = 'flex';
-      connectWebSocket();
-    }
-    
-    function connectWebSocket() {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/v1/proposals/${proposalId}/live?agentId=${agentId}`;
-      
-      ws = new WebSocket(wsUrl);
-      
-      ws.onopen = () => {
-        updateConnectionStatus(true);
-      };
-      
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        handleMessage(data);
-      };
-      
-      ws.onclose = () => {
-        updateConnectionStatus(false);
-        // Reconnect after 3s
-        setTimeout(connectWebSocket, 3000);
-      };
-      
-      ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-        updateConnectionStatus(false);
-      };
-    }
-    
-    function handleMessage(data) {
-      console.log('Received:', data);
-      
-      if (data.type === 'welcome') {
-        // Got proposal data
-        proposal = data.proposal;
-        agentName = data.agentName;
+    async function loadProposal() {
+      try {
+        const res = await fetch(`${API}/v1/proposals/${proposalId}`);
+        const data = await res.json();
         
-        // Show room view
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('room-view').style.display = 'block';
-        
-        // Update UI
-        updateProposalUI(data);
-        
-        // Render history
-        if (data.history) {
-          data.history.forEach(msg => renderMessage(msg));
+        if (!data.success) {
+          showError('Proposal Not Found', data.error?.message || 'Could not load proposal');
+          if (pollInterval) clearInterval(pollInterval);
+          return;
         }
-      }
-      
-      if (data.type === 'message') {
-        renderMessage(data.message);
+        
+        proposal = data.data;
+        
+        // Fetch multisig for agent details
+        const msRes = await fetch(`${API}/v1/multisigs/${proposal.multisigId}`);
+        const msData = await msRes.json();
+        if (msData.success) {
+          multisig = msData.data;
+        }
+        
+        renderProposal();
+        
+      } catch (e) {
+        console.error('Load error:', e);
+        showError('Error', 'Failed to load proposal');
+        if (pollInterval) clearInterval(pollInterval);
       }
     }
     
-    function updateProposalUI(data) {
-      document.getElementById('proposal-id').textContent = `ID: ${proposalId.slice(0, 8)}...`;
-      document.getElementById('proposal-note').textContent = data.proposal.note || 'Bitcoin Transaction';
+    function renderProposal() {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error').classList.add('hidden');
+      document.getElementById('proposal-view').classList.remove('hidden');
       
-      // Update status badge
-      const status = data.proposal.status || 'pending';
+      // Status badge
       const badge = document.getElementById('status-badge');
-      badge.className = `status-badge ${status}`;
-      document.getElementById('status-text').textContent = status.charAt(0).toUpperCase() + status.slice(1);
+      badge.textContent = proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1);
+      badge.className = `status-badge ${proposal.status}`;
       
-      // Update signers (mock for now - would come from API)
-      // In real impl, we'd fetch this from proposal data
-    }
-    
-    function renderMessage(msg) {
-      const container = document.getElementById('messages');
-      const div = document.createElement('div');
+      // Amount
+      const totalAmount = proposal.outputs?.reduce((s, o) => s + parseInt(o.amount || 0), 0) || 0;
+      document.getElementById('amount').textContent = totalAmount.toLocaleString() + ' sats';
       
-      if (msg.type === 'system') {
-        div.className = 'message system';
-        div.innerHTML = `<div class="message-content">${escapeHtml(msg.content)}</div>`;
-      } else {
-        const time = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        div.className = 'message';
-        div.innerHTML = `
-          <div class="message-avatar">🤖</div>
-          <div class="message-body">
-            <div class="message-header">
-              <span class="message-name">${escapeHtml(msg.agentName || msg.agentId)}</span>
-              <span class="message-time">${time}</span>
+      // Recipient
+      const recipient = proposal.outputs?.[0]?.address || '—';
+      document.getElementById('recipient').textContent = recipient;
+      
+      // Fee
+      document.getElementById('fee').textContent = (proposal.fee || '—') + ' sats';
+      
+      // Signatures
+      const sigCount = proposal.signatures?.length || 0;
+      const threshold = multisig?.threshold || 2;
+      document.getElementById('sig-count').textContent = sigCount;
+      document.getElementById('threshold').textContent = threshold;
+      
+      // Signers list
+      const signersList = document.getElementById('signers-list');
+      const agents = multisig?.agents || [];
+      const signedAgents = proposal.signatures?.map(s => s.agentId) || [];
+      
+      signersList.innerHTML = agents.map(agent => {
+        const hasSigned = signedAgents.includes(agent.id);
+        return `
+          <div class="signer">
+            <div class="signer-icon ${hasSigned ? 'signed' : 'pending'}">
+              ${hasSigned ? '✓' : '?'}
             </div>
-            <div class="message-content">${escapeHtml(msg.content)}</div>
+            <div class="signer-info">
+              <div class="signer-name">${agent.name || agent.id}</div>
+              <div class="signer-status ${hasSigned ? 'signed' : ''}">${hasSigned ? 'Signed ✓' : 'Pending signature'}</div>
+            </div>
           </div>
         `;
+      }).join('');
+      
+      // Sighash
+      const sighash = proposal.sighashes?.[0]?.sighash;
+      if (sighash) {
+        document.getElementById('sighash').textContent = sighash;
       }
       
-      container.appendChild(div);
-      container.scrollTop = container.scrollHeight;
-    }
-    
-    function sendMessage() {
-      const input = document.getElementById('message-input');
-      const content = input.value.trim();
-      if (!content || !ws) return;
-      
-      ws.send(JSON.stringify({ type: 'message', content }));
-      input.value = '';
-    }
-    
-    function handleKeyPress(event) {
-      if (event.key === 'Enter') {
-        sendMessage();
-      }
-    }
-    
-    function signProposal() {
-      alert('Signing would integrate with your wallet provider here.\n\nIn production, this would:\n1. Fetch the sighash\n2. Sign with your key\n3. Submit signature to API');
-    }
-    
-    function updateConnectionStatus(connected) {
-      const el = document.getElementById('connection-status');
-      if (connected) {
-        el.className = 'connection-status connected';
-        el.innerHTML = '<span>●</span> Connected';
+      // Hide sighash card if already broadcast/confirmed
+      if (['broadcast', 'confirmed'].includes(proposal.status)) {
+        document.getElementById('sighash-card').classList.add('hidden');
       } else {
-        el.className = 'connection-status disconnected';
-        el.innerHTML = '<span>●</span> Disconnected';
+        document.getElementById('sighash-card').classList.remove('hidden');
+      }
+      
+      // TX link
+      if (proposal.txid) {
+        const txLink = document.getElementById('tx-link');
+        txLink.href = `https://mempool.space/tx/${proposal.txid}`;
+        txLink.classList.remove('hidden');
       }
     }
     
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+    function showError(title, message) {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('proposal-view').classList.add('hidden');
+      document.getElementById('error').classList.remove('hidden');
+      document.getElementById('error-title').textContent = title;
+      document.getElementById('error-message').textContent = message;
+      document.getElementById('status-badge').textContent = 'Error';
+      document.getElementById('status-badge').className = 'status-badge';
+    }
+    
+    async function submitSignature() {
+      const agentId = document.getElementById('sign-agent-id').value.trim();
+      const signature = document.getElementById('sign-signature').value.trim();
+      
+      if (!agentId || !signature) {
+        alert('Please enter both Agent ID and Signature');
+        return;
+      }
+      
+      if (signature.length !== 128) {
+        alert('Signature must be 128 hex characters (64 bytes)');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API}/v1/proposals/${proposalId}/sign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId, signature }),
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(`✓ Signature submitted! ${data.data.signatureCount}/${multisig?.threshold || 2} signatures.`);
+          document.getElementById('sign-signature').value = '';
+          await loadProposal();
+          
+          // Auto-broadcast if finalized
+          if (data.data.status === 'finalized' && data.data.thresholdMet) {
+            if (confirm('All signatures collected! Broadcast transaction now?')) {
+              await broadcastTx();
+            }
+          }
+        } else {
+          alert(`Error: ${data.error?.message || 'Failed to submit signature'}`);
+        }
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    }
+    
+    async function broadcastTx() {
+      try {
+        const res = await fetch(`${API}/v1/proposals/${proposalId}/broadcast`, {
+          method: 'POST',
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(`✓ Transaction broadcast!\n\nTXID: ${data.data.txid}`);
+          await loadProposal();
+        } else {
+          alert(`Error: ${data.error?.message || 'Failed to broadcast'}`);
+        }
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
     }
     
     // Start
