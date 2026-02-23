@@ -374,12 +374,22 @@
         <input type="text" id="address" readonly style="font-family: monospace;">
       </div>
       
+      <div class="balance-display" style="background: rgba(236,72,153,0.1); border: 1px solid rgba(236,72,153,0.3); border-radius: 12px; padding: 1.25rem; margin: 1rem 0; text-align: center;">
+        <div style="font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-bottom: 0.25rem;">Balance</div>
+        <div id="balanceAmount" style="font-size: 1.75rem; font-weight: 700; color: #ec4899;">—</div>
+        <div id="balanceStatus" style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 0.25rem;"></div>
+      </div>
+      
       <button class="btn btn-primary" onclick="copyAddress()">
         Copy Address
       </button>
       
       <button class="btn btn-secondary" onclick="createProposal()">
-        Create First Proposal →
+        Create Spend Proposal →
+      </button>
+      
+      <button class="btn btn-secondary" onclick="refreshBalance()" style="margin-top: 0.5rem;">
+        ↻ Refresh Balance
       </button>
     </div>
   </div>
@@ -449,6 +459,8 @@
         // Multisig is ready
         document.getElementById('ready').classList.remove('hidden');
         document.getElementById('address').value = address;
+        // Fetch and display balance
+        refreshBalance();
       } else if (myJoinedSlot) {
         // I've joined, waiting for others
         document.getElementById('waiting').classList.remove('hidden');
@@ -538,6 +550,44 @@
     function createProposal() {
       // Navigate to proposal creation with the multisig ID
       window.location.href = `/propose?multisigId=${pendingMultisig.multisigId}`;
+    }
+    
+    async function refreshBalance() {
+      if (!pendingMultisig?.multisigId) return;
+      
+      const balanceEl = document.getElementById('balanceAmount');
+      const statusEl = document.getElementById('balanceStatus');
+      
+      balanceEl.textContent = '...';
+      statusEl.textContent = 'Fetching...';
+      
+      try {
+        const res = await fetch(`/v1/multisigs/${pendingMultisig.multisigId}`);
+        const data = await res.json();
+        
+        if (data.success && data.data.balance) {
+          const bal = data.data.balance;
+          const confirmed = parseInt(bal.confirmed || '0');
+          const unconfirmed = parseInt(bal.unconfirmed || '0');
+          const total = parseInt(bal.total || '0');
+          
+          balanceEl.textContent = total.toLocaleString() + ' sats';
+          
+          if (unconfirmed > 0) {
+            statusEl.textContent = `${confirmed.toLocaleString()} confirmed + ${unconfirmed.toLocaleString()} pending`;
+          } else if (total === 0) {
+            statusEl.textContent = 'No funds yet - send BTC to the address above';
+          } else {
+            statusEl.textContent = 'All confirmed ✓';
+          }
+        } else {
+          balanceEl.textContent = '0 sats';
+          statusEl.textContent = 'Send BTC to the address above';
+        }
+      } catch (e) {
+        balanceEl.textContent = '—';
+        statusEl.textContent = 'Could not fetch balance';
+      }
     }
     
     // Start
