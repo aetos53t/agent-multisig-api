@@ -94,6 +94,14 @@
             <input type="number" id="prop-amount" placeholder="5000" 
               class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 focus:border-pink-500 focus:outline-none">
           </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Visibility</label>
+            <select id="prop-visibility" 
+              class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 focus:border-pink-500 focus:outline-none">
+              <option value="public">Public - Anyone can view</option>
+              <option value="private">Private - Only signers</option>
+            </select>
+          </div>
           <div class="flex gap-2">
             <button onclick="createProposal()" class="btn-pink flex-1 py-2 rounded-lg font-semibold">Create</button>
             <button onclick="hideNewProposal()" class="btn-gray px-4 py-2 rounded-lg">Cancel</button>
@@ -360,6 +368,7 @@
     async function createProposal() {
       const recipient = document.getElementById('prop-recipient').value.trim();
       const amount = parseInt(document.getElementById('prop-amount').value);
+      const visibility = document.getElementById('prop-visibility').value;
       
       if (!recipient || !amount) {
         alert('Please enter recipient and amount');
@@ -373,6 +382,7 @@
           body: JSON.stringify({
             multisigId: roomData.multisigId,
             outputs: [{ address: recipient, amount }],
+            visibility,
           }),
         });
         const json = await res.json();
@@ -381,12 +391,10 @@
           hideNewProposal();
           document.getElementById('prop-recipient').value = '';
           document.getElementById('prop-amount').value = '';
-          await loadProposals();
           
-          // Show sighash
-          if (json.data.sighashes?.[0]) {
-            alert(`Proposal created!\n\nSighash to sign:\n${json.data.sighashes[0].sighash}`);
-          }
+          // Redirect to proposal room for signing coordination
+          const proposalId = json.data.id;
+          window.location.href = `/p/${proposalId}`;
         } else {
           alert(`Error: ${json.error?.message || 'Failed to create proposal'}`);
         }
