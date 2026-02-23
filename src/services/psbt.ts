@@ -395,11 +395,20 @@ export function addSignatureToPSBT(input: SignPSBTInput): string {
   // Get existing input data
   const existingInput = tx.getInput(inputIndex);
   
-  // Get leaf hash from tapLeafScript (required for script-path signing)
-  const leafHash = existingInput.tapLeafScript?.[0]?.leafHash;
-  if (!leafHash) {
+  // Get tapLeafScript - format is [[controlBlockObj, scriptBytes], ...]
+  const tapLeafScript = existingInput.tapLeafScript;
+  if (!tapLeafScript || tapLeafScript.length === 0) {
     throw new Error('No tapLeafScript found on input - cannot add script-path signature');
   }
+  
+  // tapLeafScript[0] is [controlBlockWithPath, script]
+  // The script is at index 1, and we need to compute leafHash from it
+  const [controlBlock, scriptBytes] = tapLeafScript[0] as [any, Uint8Array];
+  
+  // Compute leaf hash: TapLeaf hash = tagged_hash("TapLeaf", leaf_version || compact_size(script) || script)
+  const leafHash = computeLeafHash(scriptBytes as Uint8Array);
+  
+  console.log(`[PSBT] Computed leafHash: ${hex.encode(leafHash).slice(0,16)}...`);
   
   // Get existing signatures and append new one (don't overwrite)
   const existingSigs = existingInput.tapScriptSig || [];
