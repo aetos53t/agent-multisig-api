@@ -170,17 +170,23 @@ router.post('/', async (c) => {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (input.expiresInSeconds || 86400) * 1000);
     
+    // Convert BigInts to strings for JSON serialization
+    const outputsForStorage = outputs.map(o => ({
+      ...o,
+      amount: o.amount.toString(),
+    }));
+    
     const proposal: Proposal = {
       id: proposalId,
       multisigId: input.multisigId,
       status: 'pending',
-      outputs,
+      outputs: outputsForStorage as any,
       feeRate,
-      fee: psbtResult.fee,
+      fee: Number(psbtResult.fee),
       inputs: enrichedUtxos,
       changeOutput: psbtResult.changeAmount > 0n ? {
         address: multisig.address,
-        amount: psbtResult.changeAmount,
+        amount: psbtResult.changeAmount.toString(),
       } : undefined,
       selectedLeafIndex,
       requiredSigners: selectedLeaf.signerAgentIds,
