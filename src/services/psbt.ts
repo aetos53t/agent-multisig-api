@@ -291,19 +291,17 @@ export function createPSBT(input: CreatePSBTInput): PSBTResult {
   
   const sighashes = inputs.map((_, inputIndex) => {
     // BIP 341 sighash for script-path spending
-    // preimageWitnessV1 returns the PREIMAGE - we must hash it!
-    const preimage = (tx as any).preimageWitnessV1(
+    // Note: preimageWitnessV1 returns the FINAL tagged hash (not preimage!)
+    // It internally calls tagSchnorr('TapSighash', ...preimage)
+    const sighash = (tx as any).preimageWitnessV1(
       inputIndex,
       prevOutScripts,
       btc.SigHash.DEFAULT,
       amounts,
-      undefined,        // extFlag (undefined for script-path)
+      undefined,        // codeSeparator (-1 = no OP_CODESEPARATOR)
       leafScript,       // script being executed
       TAPSCRIPT_LEAF_VERSION
     );
-    
-    // BIP 341: sighash = tagged_hash("TapSighash", preimage)
-    const sighash = taggedHash('TapSighash', preimage);
     
     // Compute leaf hash
     const leafHash = computeLeafHash(leafScript);
