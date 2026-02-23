@@ -374,9 +374,30 @@ export async function getProposal(id: string): Promise<Proposal | null> {
 
   if (!rows[0]) return null;
 
+  const row = rows[0];
+  
+  // Parse JSON fields if they're strings
+  let outputs = row.outputs;
+  if (typeof outputs === 'string') {
+    try { outputs = JSON.parse(outputs); } catch {}
+  }
+  
+  let inputs = row.inputs;
+  if (typeof inputs === 'string') {
+    try { inputs = JSON.parse(inputs); } catch {}
+  }
+  
+  let changeOutput = row.changeOutput;
+  if (typeof changeOutput === 'string') {
+    try { changeOutput = JSON.parse(changeOutput); } catch {}
+  }
+
   return {
-    ...rows[0],
-    signatures: rows[0].signatures || [],
+    ...row,
+    outputs,
+    inputs,
+    changeOutput,
+    signatures: row.signatures || [],
   };
 }
 
