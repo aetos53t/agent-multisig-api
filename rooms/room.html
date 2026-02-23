@@ -249,7 +249,10 @@
       document.getElementById('address').textContent = multisigData.address;
       
       if (multisigData.balance !== undefined) {
-        document.getElementById('balance').textContent = `${multisigData.balance.toLocaleString()} sats`;
+        const bal = typeof multisigData.balance === 'object' 
+          ? (multisigData.balance.confirmed || multisigData.balance.total || 0)
+          : multisigData.balance;
+        document.getElementById('balance').textContent = `${Number(bal).toLocaleString()} sats`;
       }
     }
 
@@ -457,6 +460,19 @@
 
     // Load on start
     loadRoom();
+    
+    // Auto-refresh every 5 seconds until multisig is ready
+    let pollInterval = setInterval(async () => {
+      if (roomData?.multisigId) {
+        // Multisig exists, slow down polling
+        clearInterval(pollInterval);
+        // Poll proposals every 10s instead
+        setInterval(loadProposals, 10000);
+      } else {
+        // Still waiting for signers, refresh room
+        await loadRoom();
+      }
+    }, 5000);
   </script>
 </body>
 </html>
