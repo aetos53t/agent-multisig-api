@@ -125,10 +125,10 @@ export async function createMultisig(
         ${multisig.address},
         ${multisig.threshold},
         ${multisig.createdBy},
-        ${multisig.bitcoin?.internalPubkey || null},
-        ${multisig.bitcoin?.merkleRoot || null},
-        ${multisig.bitcoin?.tweakedPubkey || null},
-        ${multisig.bitcoin?.scriptTree ? JSON.stringify(multisig.bitcoin.scriptTree) : null}
+        ${(multisig as any).internalPubkey || multisig.bitcoin?.internalPubkey || null},
+        ${(multisig as any).merkleRoot || multisig.bitcoin?.merkleRoot || null},
+        ${(multisig as any).tweakedPubkey || multisig.bitcoin?.tweakedPubkey || null},
+        ${(multisig as any).scriptTree ? JSON.stringify((multisig as any).scriptTree) : (multisig.bitcoin?.scriptTree ? JSON.stringify(multisig.bitcoin.scriptTree) : null)}
       )
     `;
 
