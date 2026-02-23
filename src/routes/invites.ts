@@ -11,7 +11,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import repo from '../db/repository';
-import { generateTaprootAddress } from '../services/taproot';
+import { createP2TRMultisig } from '../services/taproot';
 
 const router = new Hono();
 
@@ -210,7 +210,7 @@ router.post('/:id/join', async (c) => {
         let address = '';
         if (pending.chainId.startsWith('bitcoin')) {
           const pubkeys = pending.slots.map(s => s.publicKey!);
-          const result = generateTaprootAddress(pubkeys, pending.threshold, pending.chainId as any);
+          const result = createP2TRMultisig(pubkeys, pending.threshold, pending.chainId as any);
           address = result.address;
         } else {
           // EVM/Solana - would need to deploy contract
