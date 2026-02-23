@@ -164,6 +164,37 @@ app.get('/', async (c) => {
   });
 });
 
+// Redirect /p/ to landing
+app.get('/p', (c) => c.redirect('/'));
+
+// Serve proposal room UI
+app.get('/p/:id', async (c) => {
+  try {
+    const strategies = [
+      `${import.meta.dir}/../rooms/index.html`,
+      './rooms/index.html',
+      '/app/rooms/index.html',
+      `${process.cwd()}/rooms/index.html`,
+    ];
+    
+    for (const roomPath of strategies) {
+      try {
+        const file = Bun.file(roomPath);
+        if (await file.exists()) {
+          const html = await file.text();
+          return c.html(html);
+        }
+      } catch {
+        // Try next strategy
+      }
+    }
+    
+    throw new Error('Room UI not found');
+  } catch {
+    return c.redirect('/');
+  }
+});
+
 // Serve dashboard
 app.get('/dashboard', async (c) => {
   try {
