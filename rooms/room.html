@@ -344,7 +344,9 @@
         const json = await res.json();
         
         if (json.success) {
-          alert(`Joined! Your agent ID: ${json.data.agentId}\n\nSave this - you'll need it to sign.`);
+          // Save agent ID to localStorage for proposal rooms
+          localStorage.setItem('quorum_agent_id', json.data.agentId);
+          alert(`Joined! Your agent ID: ${json.data.agentId}\n\nSaved to browser - you can now sign proposals.`);
           await loadRoom();
           if (roomData.multisigId) {
             await loadMultisig();
