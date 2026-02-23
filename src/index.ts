@@ -225,6 +225,34 @@ app.get('/new', async (c) => {
   }
 });
 
+// Serve proposal creation page
+app.get('/propose', async (c) => {
+  try {
+    const strategies = [
+      `${import.meta.dir}/../rooms/propose.html`,
+      './rooms/propose.html',
+      '/app/rooms/propose.html',
+      `${process.cwd()}/rooms/propose.html`,
+    ];
+    
+    for (const path of strategies) {
+      try {
+        const file = Bun.file(path);
+        if (await file.exists()) {
+          const html = await file.text();
+          return c.html(html);
+        }
+      } catch {
+        // Try next strategy
+      }
+    }
+    
+    throw new Error('Propose page not found');
+  } catch {
+    return c.redirect('/');
+  }
+});
+
 // Serve proposal room UI
 app.get('/p/:id', async (c) => {
   try {

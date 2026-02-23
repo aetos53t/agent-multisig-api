@@ -536,8 +536,8 @@
     }
     
     function createProposal() {
-      // Navigate to proposal creation
-      window.location.href = `/new?multisigId=${pendingMultisig.id}`;
+      // Navigate to proposal creation with the multisig ID
+      window.location.href = `/propose?multisigId=${pendingMultisig.multisigId}`;
     }
     
     // Start
