@@ -132,7 +132,7 @@ router.post('/', async (c) => {
     }
     
     // Add scriptPubkey to UTXOs
-    const scriptPubkey = p2trScriptPubkey(multisig.bitcoin.tweakedPubkey);
+    const scriptPubkey = p2trScriptPubkey(multisig.tweakedPubkey);
     const enrichedUtxos = utxos.map(u => ({ ...u, scriptPubkey }));
     
     // Get fee rate
@@ -147,7 +147,7 @@ router.post('/', async (c) => {
     
     // Select leaf (use first one for now)
     const selectedLeafIndex = 0;
-    const selectedLeaf = multisig.bitcoin.scriptTree.leaves[selectedLeafIndex];
+    const selectedLeaf = multisig.scriptTree.leaves[selectedLeafIndex];
     
     // Create PSBT
     const psbtResult = createPSBT({
@@ -158,9 +158,9 @@ router.post('/', async (c) => {
       chainId: multisig.chainId,
       multisig: {
         address: multisig.address,
-        internalPubkey: multisig.bitcoin.internalPubkey,
-        tweakedPubkey: multisig.bitcoin.tweakedPubkey,
-        scriptTree: multisig.bitcoin.scriptTree,
+        internalPubkey: multisig.internalPubkey,
+        tweakedPubkey: multisig.tweakedPubkey,
+        scriptTree: multisig.scriptTree,
       },
       selectedLeafIndex,
     });
@@ -496,9 +496,14 @@ router.post('/:id/sign', async (c) => {
     try {
       console.log(`[Auto-Finalize] Threshold met for proposal ${proposalId}, finalizing...`);
       
+      const bitcoinData = {
+        internalPubkey: multisig.internalPubkey,
+        tweakedPubkey: multisig.tweakedPubkey,
+        scriptTree: multisig.scriptTree,
+      };
       const result = finalizePSBT(
         signedTx,
-        multisig.bitcoin!,
+        bitcoinData,
         updatedProposal.selectedLeafIndex || 0
       );
       
@@ -609,9 +614,14 @@ router.post('/:id/finalize', async (c) => {
   }
   
   try {
+    const bitcoinData = {
+      internalPubkey: multisig.internalPubkey,
+      tweakedPubkey: multisig.tweakedPubkey,
+      scriptTree: multisig.scriptTree,
+    };
     const result = finalizePSBT(
       proposal.signedTx || proposal.unsignedTx,
-      multisig.bitcoin,
+      bitcoinData,
       proposal.selectedLeafIndex || 0
     );
     

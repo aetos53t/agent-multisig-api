@@ -239,10 +239,17 @@ router.post('/:id/join', async (c) => {
         
         // Generate address based on chain
         let address = '';
+        let taprootData: any = null;
+        
         if (invite.chain_id.startsWith('bitcoin')) {
           const pubkeys = allSlots.map((s: any) => s.public_key);
           const result = createP2TRMultisig(pubkeys, invite.threshold, invite.chain_id as any);
           address = result.address;
+          taprootData = {
+            internalPubkey: result.internalPubkey,
+            tweakedPubkey: result.tweakedPubkey,
+            scriptTree: result.scriptTree,
+          };
         } else {
           // EVM/Solana - would need to deploy contract
           address = `pending-${id}`;
@@ -258,6 +265,12 @@ router.post('/:id/join', async (c) => {
           threshold: invite.threshold,
           createdBy: agentIds[0],
           createdAt: new Date(),
+          // Include taproot data for Bitcoin multisigs
+          ...(taprootData && {
+            internalPubkey: taprootData.internalPubkey,
+            tweakedPubkey: taprootData.tweakedPubkey,
+            scriptTree: taprootData.scriptTree,
+          }),
         };
         
         const agentPositions = agentIds.map((agentId, index) => ({
