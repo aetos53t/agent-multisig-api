@@ -176,6 +176,11 @@ router.post('/', async (c) => {
       amount: o.amount.toString(),
     }));
     
+    const inputsForStorage = enrichedUtxos.map(u => ({
+      ...u,
+      amount: u.amount.toString(),
+    }));
+    
     const proposal: Proposal = {
       id: proposalId,
       multisigId: input.multisigId,
@@ -183,7 +188,7 @@ router.post('/', async (c) => {
       outputs: outputsForStorage as any,
       feeRate,
       fee: Number(psbtResult.fee),
-      inputs: enrichedUtxos,
+      inputs: inputsForStorage as any,
       changeOutput: psbtResult.changeAmount > 0n ? {
         address: multisig.address,
         amount: psbtResult.changeAmount.toString(),
