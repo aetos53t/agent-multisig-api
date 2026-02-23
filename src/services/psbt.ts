@@ -401,12 +401,14 @@ export function addSignatureToPSBT(input: SignPSBTInput): string {
     throw new Error('No tapLeafScript found on input - cannot add script-path signature');
   }
   
-  // tapLeafScript[0] is [controlBlockWithPath, script]
-  // The script is at index 1, and we need to compute leafHash from it
-  const [controlBlock, scriptBytes] = tapLeafScript[0] as [any, Uint8Array];
+  // tapLeafScript[0] is [controlBlockWithPath, scriptWithVersion]
+  // Note: btc-signer appends leaf version (0xc0) to script - strip it for leafHash computation
+  const [controlBlock, scriptWithVersion] = tapLeafScript[0] as [any, Uint8Array];
+  const scriptNoVersion = scriptWithVersion.slice(0, -1); // Remove trailing version byte
   
   // Compute leaf hash: TapLeaf hash = tagged_hash("TapLeaf", leaf_version || compact_size(script) || script)
-  const leafHash = computeLeafHash(scriptBytes as Uint8Array);
+  // Note: computeLeafHash adds the version internally
+  const leafHash = computeLeafHash(scriptNoVersion);
   
   console.log(`[PSBT] Computed leafHash: ${hex.encode(leafHash).slice(0,16)}...`);
   
