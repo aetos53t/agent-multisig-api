@@ -36,14 +36,58 @@ export async function runMigrations(): Promise<boolean> {
   if (!sql || migrated) return migrated;
   
   try {
-    // Check if tables exist
+    // Check if base tables exist
     const tables = await sql`
       SELECT tablename FROM pg_tables 
       WHERE schemaname = 'public' AND tablename = 'agents'
     `;
     
     if (tables.length > 0) {
-      console.log('✅ Database tables already exist');
+      console.log('✅ Base database tables already exist');
+      
+      // Check for invites table (added in v0.3.2)
+      const invitesTable = await sql`
+        SELECT tablename FROM pg_tables 
+        WHERE schemaname = 'public' AND tablename = 'invites'
+      `;
+      
+      if (invitesTable.length === 0) {
+        console.log('🔨 Creating invites tables (v0.3.2 migration)...');
+        
+        // Create invites table
+        await sql`
+          CREATE TABLE IF NOT EXISTS invites (
+            id VARCHAR(8) PRIMARY KEY,
+            name VARCHAR(256) NOT NULL,
+            chain_id chain_id NOT NULL,
+            threshold INTEGER NOT NULL CHECK (threshold >= 2),
+            total_slots INTEGER NOT NULL CHECK (total_slots >= 2),
+            multisig_id UUID REFERENCES multisigs(id),
+            address VARCHAR(256),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days')
+          )
+        `;
+        await sql`CREATE INDEX IF NOT EXISTS idx_invites_created ON invites(created_at)`;
+        
+        // Create invite_slots table
+        await sql`
+          CREATE TABLE IF NOT EXISTS invite_slots (
+            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+            invite_id VARCHAR(8) NOT NULL REFERENCES invites(id) ON DELETE CASCADE,
+            slot_index INTEGER NOT NULL,
+            name VARCHAR(256),
+            public_key VARCHAR(130),
+            session_id VARCHAR(64),
+            joined_at TIMESTAMPTZ,
+            UNIQUE (invite_id, slot_index)
+          )
+        `;
+        await sql`CREATE INDEX IF NOT EXISTS idx_invite_slots_invite ON invite_slots(invite_id)`;
+        
+        console.log('✅ Invites tables created');
+      }
+      
       migrated = true;
       return true;
     }
@@ -196,6 +240,37 @@ export async function runMigrations(): Promise<boolean> {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `;
+    
+    // Create invites table
+    await sql`
+      CREATE TABLE IF NOT EXISTS invites (
+        id VARCHAR(8) PRIMARY KEY,
+        name VARCHAR(256) NOT NULL,
+        chain_id chain_id NOT NULL,
+        threshold INTEGER NOT NULL CHECK (threshold >= 2),
+        total_slots INTEGER NOT NULL CHECK (total_slots >= 2),
+        multisig_id UUID REFERENCES multisigs(id),
+        address VARCHAR(256),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days')
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_invites_created ON invites(created_at)`;
+    
+    // Create invite_slots table
+    await sql`
+      CREATE TABLE IF NOT EXISTS invite_slots (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        invite_id VARCHAR(8) NOT NULL REFERENCES invites(id) ON DELETE CASCADE,
+        slot_index INTEGER NOT NULL,
+        name VARCHAR(256),
+        public_key VARCHAR(130),
+        session_id VARCHAR(64),
+        joined_at TIMESTAMPTZ,
+        UNIQUE (invite_id, slot_index)
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_invite_slots_invite ON invite_slots(invite_id)`;
     
     console.log('✅ Database tables created successfully');
     migrated = true;

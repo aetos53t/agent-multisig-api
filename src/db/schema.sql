@@ -219,6 +219,39 @@ CREATE TRIGGER webhooks_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- ═══════════════════════════════════════════════════════════════════
+--                            INVITES
+-- ═══════════════════════════════════════════════════════════════════
+
+CREATE TABLE invites (
+  id VARCHAR(8) PRIMARY KEY,
+  name VARCHAR(256) NOT NULL,
+  chain_id chain_id NOT NULL,
+  threshold INTEGER NOT NULL CHECK (threshold >= 2),
+  total_slots INTEGER NOT NULL CHECK (total_slots >= 2),
+  multisig_id UUID REFERENCES multisigs(id),
+  address VARCHAR(256),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days')
+);
+
+CREATE INDEX idx_invites_created ON invites(created_at);
+CREATE INDEX idx_invites_expires ON invites(expires_at);
+
+CREATE TABLE invite_slots (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  invite_id VARCHAR(8) NOT NULL REFERENCES invites(id) ON DELETE CASCADE,
+  slot_index INTEGER NOT NULL,
+  name VARCHAR(256),
+  public_key VARCHAR(130),
+  session_id VARCHAR(64),
+  joined_at TIMESTAMPTZ,
+  UNIQUE (invite_id, slot_index),
+  UNIQUE (invite_id, public_key)
+);
+
+CREATE INDEX idx_invite_slots_invite ON invite_slots(invite_id);
+
+-- ═══════════════════════════════════════════════════════════════════
 --                            VIEWS
 -- ═══════════════════════════════════════════════════════════════════
 
