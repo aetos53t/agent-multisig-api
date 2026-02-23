@@ -346,8 +346,8 @@ export async function handleProposalWebSocket(
   // Announce join
   roomManager.systemMessage(proposalId, `${agentName} joined the room`);
   
-  // Handle incoming messages
-  ws.addEventListener('message', async (event) => {
+  // Handle incoming messages (Bun uses onmessage, not addEventListener)
+  ws.onmessage = async (event: any) => {
     try {
       const data = JSON.parse(event.data as string);
       
@@ -362,18 +362,18 @@ export async function handleProposalWebSocket(
     } catch (e) {
       console.error('[Room] Message parse error:', e);
     }
-  });
+  };
   
-  // Handle disconnect
-  ws.addEventListener('close', () => {
+  // Handle disconnect (Bun uses onclose)
+  ws.onclose = () => {
     unsubscribe();
     roomManager.systemMessage(proposalId, `${agentName} left the room`);
-  });
+  };
   
-  ws.addEventListener('error', (e) => {
+  ws.onerror = (e: any) => {
     console.error('[Room] WebSocket error:', e);
     unsubscribe();
-  });
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════
