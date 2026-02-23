@@ -381,12 +381,10 @@
           hideNewProposal();
           document.getElementById('prop-recipient').value = '';
           document.getElementById('prop-amount').value = '';
-          await loadProposals();
           
-          // Show sighash
-          if (json.data.sighashes?.[0]) {
-            alert(`Proposal created!\n\nSighash to sign:\n${json.data.sighashes[0].sighash}`);
-          }
+          // Redirect to the real-time proposal room for signing coordination
+          const proposalId = json.data.id;
+          window.location.href = `/p/${proposalId}`;
         } else {
           alert(`Error: ${json.error?.message || 'Failed to create proposal'}`);
         }
