@@ -255,6 +255,21 @@ router.post('/:id/join', async (c) => {
           address = `pending-${id}`;
         }
         
+        // Build pubkey -> agentId map
+        const pubkeyToAgentId = new Map<string, string>();
+        for (let i = 0; i < allSlots.length; i++) {
+          pubkeyToAgentId.set(allSlots[i].public_key, agentIds[i]);
+        }
+        
+        // Populate signerAgentIds in scriptTree leaves
+        if (taprootData?.scriptTree?.leaves) {
+          for (const leaf of taprootData.scriptTree.leaves) {
+            if (leaf.signerPubkeys) {
+              leaf.signerAgentIds = leaf.signerPubkeys.map((pk: string) => pubkeyToAgentId.get(pk) || '');
+            }
+          }
+        }
+        
         // Create multisig record
         const multisigId = crypto.randomUUID();
         const multisigData = {
