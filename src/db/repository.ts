@@ -182,9 +182,20 @@ export async function getMultisig(id: string): Promise<Multisig | null> {
 
   if (!rows[0]) return null;
 
+  const row = rows[0];
+  
+  // Parse scriptTree if it's a JSON string
+  let scriptTree = row.scriptTree;
+  if (typeof scriptTree === 'string') {
+    try {
+      scriptTree = JSON.parse(scriptTree);
+    } catch {}
+  }
+
   return {
-    ...rows[0],
-    agents: rows[0].agents || [],
+    ...row,
+    scriptTree,
+    agents: row.agents || [],
   };
 }
 
