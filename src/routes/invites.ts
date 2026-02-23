@@ -218,14 +218,23 @@ router.post('/:id/join', async (c) => {
         }
         
         // Create multisig record
-        const multisig = await repo.createMultisig({
+        const multisigId = crypto.randomUUID();
+        const multisigData = {
+          id: multisigId,
           name: pending.name,
           chainId: pending.chainId as any,
           address,
           threshold: pending.threshold,
-          agentIds,
           createdBy: agentIds[0],
-        });
+          createdAt: new Date(),
+        };
+        
+        const agentPositions = agentIds.map((agentId, index) => ({
+          agentId,
+          position: index,
+        }));
+        
+        const multisig = await repo.createMultisig(multisigData as any, agentPositions);
         
         pending.multisigId = multisig.id;
         pending.address = address;
