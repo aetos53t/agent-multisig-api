@@ -393,7 +393,7 @@ router.get('/:id/payload/:agentId', async (c) => {
   }
   
   const multisig = await repo.getMultisig(proposal.multisigId);
-  if (!multisig?.bitcoin) {
+  if (!multisig?.scriptTree) {
     return c.json<ApiResponse<never>>({
       success: false,
       error: { code: 'INVALID_MULTISIG', message: 'Multisig not found or invalid' },
@@ -678,7 +678,7 @@ router.post('/:id/finalize', async (c) => {
   }
   
   const multisig = await repo.getMultisig(proposal.multisigId);
-  if (!multisig?.bitcoin) {
+  if (!multisig?.scriptTree) {
     return c.json<ApiResponse<never>>({
       success: false,
       error: { code: 'INVALID_MULTISIG', message: 'Multisig not found' },
