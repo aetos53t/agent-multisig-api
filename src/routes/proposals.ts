@@ -359,6 +359,8 @@ router.get('/:id', async (c) => {
       remainingSigners: proposal.requiredSigners.filter(
         s => !proposal.signatures.find(sig => sig.agentId === s)
       ),
+      // Alias for convenience
+      txHex: proposal.finalTx,
     },
   });
 });
