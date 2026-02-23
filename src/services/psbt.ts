@@ -411,28 +411,27 @@ export function addSignatureToPSBT(input: SignPSBTInput): string {
   console.log(`[PSBT] Computed leafHash: ${hex.encode(leafHash).slice(0,16)}...`);
   
   // Get existing signatures and append new one (don't overwrite)
+  // Format is [[{pubKey, leafHash}, signature], ...]
   const existingSigs = existingInput.tapScriptSig || [];
   
   // Check if this pubkey already has a signature
   const pubkeyHex = hex.encode(pubkeyBytes);
-  const alreadySigned = existingSigs.some(s => hex.encode(s.pubKey) === pubkeyHex);
+  const alreadySigned = existingSigs.some(([key, _sig]: [any, any]) => hex.encode(key.pubKey) === pubkeyHex);
   if (alreadySigned) {
     console.log(`[PSBT] Pubkey ${pubkeyHex.slice(0,16)}... already has signature, skipping`);
     return psbt; // Return unchanged
   }
   
-  // Build merged signature array with leafHash
-  const mergedSigs = [
-    ...existingSigs.map(s => ({
-      pubKey: s.pubKey,
-      signature: s.signature,
-      leafHash: s.leafHash || leafHash,
-    })),
-    {
-      pubKey: pubkeyBytes,
-      signature: sigBytes,
-      leafHash: leafHash,
-    },
+  // Build merged signature array - format: [[{pubKey, leafHash}, signature], ...]
+  const mergedSigs: Array<[{pubKey: Uint8Array, leafHash: Uint8Array}, Uint8Array]> = [
+    ...existingSigs.map(([key, sig]: [any, any]) => [
+      { pubKey: key.pubKey, leafHash: key.leafHash || leafHash },
+      sig,
+    ] as [{pubKey: Uint8Array, leafHash: Uint8Array}, Uint8Array]),
+    [
+      { pubKey: pubkeyBytes, leafHash: leafHash },
+      sigBytes,
+    ],
   ];
   
   console.log(`[PSBT] Adding signature for ${pubkeyHex.slice(0,16)}..., total sigs: ${mergedSigs.length}`);
