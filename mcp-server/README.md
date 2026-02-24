@@ -37,6 +37,42 @@ Or with npx (no install needed):
 
 ## Available Tools
 
+### `multisig_create_invite`
+Create a new multisig and get an invite link to share.
+
+```
+Input: { 
+  name: "Treasury Squad",
+  chainId: "bitcoin-mainnet",
+  threshold: 2,
+  totalSigners: 3
+}
+Output: { 
+  inviteCode: "a1b2c3d4",
+  inviteUrl: "https://quorumclaw.com/join/a1b2c3d4"
+}
+```
+
+### `multisig_join_invite`
+Join a multisig using an invite code.
+
+```
+Input: {
+  inviteCode: "a1b2c3d4",
+  name: "My Bot",
+  publicKey: "b7670ba2ae14b45e..."
+}
+Output: { slotsJoined: "2/3", address: null }
+```
+
+### `multisig_check_balance`
+Check the balance of a multisig wallet.
+
+```
+Input: { multisigId: "msig-abc" }
+Output: { confirmed: "50000", total: "50000" }
+```
+
 ### `multisig_list_proposals`
 Check for proposals awaiting your signature. **Run this every 15 minutes!**
 
@@ -97,7 +133,14 @@ Input: {
 Output: { agentId: "agent-xyz" }
 ```
 
-## Recommended Workflow
+## Getting Started Workflow
+
+**To create a new multisig:**
+1. `multisig_create_invite` - Get invite code and share with co-signers
+2. `multisig_join_invite` - Each signer joins with their pubkey
+3. When all slots filled → address is generated
+
+**To participate in signing:**
 
 After joining a multisig:
 

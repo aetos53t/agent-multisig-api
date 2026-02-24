@@ -11,6 +11,73 @@ const API_URL = process.env.QUORUM_API_URL || "https://quorumclaw.com";
 // Tool definitions
 const tools: Tool[] = [
   {
+    name: "multisig_create_invite",
+    description: "Create a new multisig wallet and get an invite link to share with other signers",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name for the multisig (e.g., 'Treasury Bot Squad')"
+        },
+        chainId: {
+          type: "string",
+          enum: ["bitcoin-mainnet", "bitcoin-testnet", "ethereum", "base", "solana-mainnet"],
+          description: "Which blockchain to create the multisig on"
+        },
+        threshold: {
+          type: "number",
+          description: "Number of signatures required (e.g., 2 for 2-of-3)"
+        },
+        totalSigners: {
+          type: "number",
+          description: "Total number of signers (e.g., 3 for 2-of-3)"
+        }
+      },
+      required: ["name", "chainId", "threshold", "totalSigners"]
+    }
+  },
+  {
+    name: "multisig_join_invite",
+    description: "Join a multisig wallet using an invite code",
+    inputSchema: {
+      type: "object",
+      properties: {
+        inviteCode: {
+          type: "string",
+          description: "The invite code (e.g., 'a1b2c3d4')"
+        },
+        name: {
+          type: "string",
+          description: "Your display name as a signer"
+        },
+        publicKey: {
+          type: "string",
+          description: "Your public key (hex). For Bitcoin: 32-byte x-only pubkey."
+        },
+        webhookUrl: {
+          type: "string",
+          description: "Optional: URL to receive signing notifications"
+        }
+      },
+      required: ["inviteCode", "name", "publicKey"]
+    }
+  },
+  {
+    name: "multisig_check_balance",
+    description: "Check the balance of a multisig wallet",
+    inputSchema: {
+      type: "object",
+      properties: {
+        multisigId: {
+          type: "string",
+          description: "The multisig wallet ID"
+        }
+      },
+      required: ["multisigId"]
+    }
+  },
+  {
     name: "multisig_register",
     description: "Register your agent with the coordination API. Returns your agent ID.",
     inputSchema: {
@@ -180,6 +247,64 @@ async function apiCall(method: string, path: string, body?: any): Promise<any> {
 // Tool handlers
 async function handleTool(name: string, args: any): Promise<any> {
   switch (name) {
+    case "multisig_create_invite": {
+      const result = await apiCall("POST", "/v1/invites", {
+        name: args.name,
+        chainId: args.chainId,
+        threshold: args.threshold,
+        totalSigners: args.totalSigners,
+      });
+      const inviteId = result.data?.inviteId || result.data?.id || result.inviteId;
+      return {
+        success: true,
+        inviteCode: inviteId,
+        inviteUrl: `${API_URL}/join/${inviteId}`,
+        threshold: args.threshold,
+        totalSigners: args.totalSigners,
+        message: `Created ${args.threshold}-of-${args.totalSigners} multisig. Share this link: ${API_URL}/join/${inviteId}`
+      };
+    }
+
+    case "multisig_join_invite": {
+      const result = await apiCall("POST", `/v1/invites/${args.inviteCode}/join`, {
+        name: args.name,
+        publicKey: args.publicKey,
+        webhookUrl: args.webhookUrl,
+      });
+      
+      const data = result.data || result;
+      const filledSlots = data.slots?.filter((s: any) => s.publicKey).length || 0;
+      const totalSlots = data.slots?.length || 0;
+      
+      return {
+        success: true,
+        multisigName: data.name,
+        slotsJoined: `${filledSlots}/${totalSlots}`,
+        address: data.address || null,
+        multisigId: data.multisigId || null,
+        message: data.address 
+          ? `Joined! Multisig is ready. Address: ${data.address}`
+          : `Joined! Waiting for ${totalSlots - filledSlots} more signer(s).`
+      };
+    }
+
+    case "multisig_check_balance": {
+      const result = await apiCall("GET", `/v1/multisigs/${args.multisigId}`);
+      const data = result.data || result;
+      const balance = data.balance || {};
+      
+      return {
+        success: true,
+        address: data.address,
+        confirmed: balance.confirmed || "0",
+        unconfirmed: balance.unconfirmed || "0",
+        total: balance.total || "0",
+        message: balance.total && parseInt(balance.total) > 0
+          ? `Balance: ${balance.total} sats (${balance.confirmed} confirmed)`
+          : "No funds yet. Send funds to the address above."
+      };
+    }
+
     case "multisig_register": {
       const result = await apiCall("POST", "/v1/agents", {
         name: args.name,
