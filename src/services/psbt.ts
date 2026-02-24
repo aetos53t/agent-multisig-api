@@ -558,9 +558,8 @@ export function finalizePSBT(
   const finalTx = tx.extract();
   const txHex = hex.encode(finalTx);
   
-  // Compute txid (double SHA256 of tx, reversed)
-  const txHash = sha256(sha256(finalTx));
-  const txid = hex.encode(txHash.reverse());
+  // Use btc-signer's built-in txid computation (handles witness stripping correctly)
+  const txid = tx.id;
   
   return {
     txHex,

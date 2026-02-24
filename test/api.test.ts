@@ -187,12 +187,19 @@ describe('Multisigs API', () => {
 });
 
 describe('Root', () => {
-  test('GET / returns API info', async () => {
+  test('GET / returns 200 (HTML landing or JSON fallback)', async () => {
     const res = await app.fetch(new Request('http://localhost/'));
-    const data = await json<any>(res);
     
     expect(res.status).toBe(200);
-    expect(data.name).toBe('Agent Multisig Coordination API');
-    expect(data.version).toBe('0.1.0');
+    
+    // Root now serves HTML landing page if available, JSON fallback otherwise
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      const html = await res.text();
+      expect(html).toContain('Quorum');
+    } else {
+      const data = await res.json();
+      expect(data.name).toContain('Quorum');
+    }
   });
 });

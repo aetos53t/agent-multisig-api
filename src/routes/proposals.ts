@@ -883,4 +883,38 @@ router.get('/', async (c) => {
   });
 });
 
+// ═══════════════════════════════════════════════════════════════════
+//                       ADMIN: UPDATE PROPOSAL
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * PATCH /proposals/:id - Update proposal (admin)
+ * Used to fix txid or status after broadcast
+ */
+router.patch('/:id', async (c) => {
+  const proposalId = c.req.param('id');
+  
+  const proposal = await repo.getProposal(proposalId);
+  if (!proposal) {
+    return c.json({
+      success: false,
+      error: { code: 'NOT_FOUND', message: 'Proposal not found' },
+    }, 404);
+  }
+  
+  const body = await c.req.json<{ txid?: string; status?: string }>();
+  
+  // Update using status function
+  const newStatus = body.status || proposal.status;
+  const extra = body.txid ? { txid: body.txid } : undefined;
+  await repo.updateProposalStatus(proposalId, newStatus, extra);
+  
+  const updated = await repo.getProposal(proposalId);
+  
+  return c.json({
+    success: true,
+    data: updated,
+  });
+});
+
 export default router;

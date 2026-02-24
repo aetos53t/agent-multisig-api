@@ -1,16 +1,33 @@
 {
-  "name": "@scrapyard/multisig-mcp",
+  "name": "quorum-mcp",
   "version": "0.1.0",
-  "description": "MCP server for multi-agent wallet coordination",
+  "description": "MCP server for Quorum - multi-agent wallet coordination across all chains",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "multisig-mcp": "dist/cli.js"
+    "quorum-mcp": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
   },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "quorum",
+    "multisig",
+    "bitcoin",
+    "taproot",
+    "ai-agents",
+    "wallet"
+  ],
+  "author": "The House of Set",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/houseof-set/agent-multisig-api"
+  },
+  "homepage": "https://quorumclaw.com",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
   },

@@ -6,7 +6,7 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 
-const API_URL = process.env.MULTISIG_API_URL || "https://api.agentmultisig.dev";
+const API_URL = process.env.QUORUM_API_URL || "https://quorumclaw.com";
 
 // Tool definitions
 const tools: Tool[] = [

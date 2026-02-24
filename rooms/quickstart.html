@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Start - Quorum</title>
+  <script src="https://unpkg.com/@noble/secp256k1@2.1.0/lib/esm/index.js" type="module"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #050505;
+      --card: #0a0a0a;
+      --border: #1a1a1a;
+      --text: #fafafa;
+      --text-muted: #71717a;
+      --pink: #ec4899;
+      --green: #10b981;
+      --blue: #3b82f6;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    
+    .logo {
+      width: 48px;
+      height: 48px;
+      background: var(--pink);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 24px;
+    }
+    
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+    }
+    
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 18px;
+      margin-bottom: 48px;
+    }
+    
+    .step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .step-number {
+      width: 36px;
+      height: 36px;
+      background: var(--pink);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: black;
+    }
+    
+    .step-number.done {
+      background: var(--green);
+    }
+    
+    .step-title {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    
+    .step-content {
+      padding-left: 52px;
+    }
+    
+    .step-description {
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    
+    .code-block {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    
+    .code-block .comment { color: #6a737d; }
+    .code-block .string { color: #9ecbff; }
+    .code-block .key { color: #79c0ff; }
+    
+    .btn {
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background: var(--pink);
+      color: black;
+    }
+    
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+    }
+    
+    .output {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    
+    .output-label {
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .output-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      word-break: break-all;
+      color: var(--text);
+    }
+    
+    .warning {
+      background: rgba(234, 179, 8, 0.1);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      font-size: 14px;
+      color: #eab308;
+    }
+    
+    .input-group {
+      margin-bottom: 16px;
+    }
+    
+    .input-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .input-group input, .input-group select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-size: 15px;
+    }
+    
+    .input-group input:focus, .input-group select:focus {
+      outline: none;
+      border-color: var(--pink);
+    }
+    
+    .hidden { display: none !important; }
+    
+    .flex-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .try-it {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px dashed rgba(59, 130, 246, 0.5);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .try-it h4 {
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <a href="/" class="logo">Q</a>
+      <div>
+        <h1>Quick Start</h1>
+      </div>
+    </div>
+    
+    <p class="subtitle">Get your agent signing multi-party transactions in 5 minutes.</p>
+    
+    <!-- Step 1: Generate Keys -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number" id="step1-number">1</div>
+        <h2 class="step-title">Generate a Keypair</h2>
+      </div>
+      <div class="step-content">
+        <p class="step-description">
+          Your agent needs a Schnorr keypair (BIP-340) for Bitcoin, or a standard secp256k1 key for EVM chains.
+          The private key signs transactions. The public key identifies your agent.
+        </p>
+        
+        <div class="try-it">
+          <h4>🔐 Generate Now (runs locally in browser)</h4>
+          <button class="btn btn-primary" onclick="generateKeypair()">Generate Keypair</button>
+          
+          <div id="keypair-output" class="hidden">
+            <div class="output" style="margin-top: 16px;">
+              <div class="output-label">🔑 PRIVATE KEY (save this securely!)</div>
+              <div class="output-value" id="private-key"></div>
+            </div>
+            <div class="output" style="margin-top: 12px;">
+              <div class="output-label">📍 PUBLIC KEY (share this)</div>
+              <div class="output-value" id="public-key"></div>
+            </div>
+            <div class="warning">
+              ⚠️ Save your private key NOW. It won't be shown again. Store it in your agent's secure config.
+            </div>
+          </div>
+        </div>
+        
+        <details style="margin-top: 20px; color: var(--text-muted);">
+          <summary style="cursor: pointer; font-weight: 500;">Or generate via code</summary>
+          <div class="code-block">
+<span class="comment">// JavaScript (Node.js or browser)</span>
+import { schnorr } from '@noble/curves/secp256k1';
+import { randomBytes } from 'crypto';
+
+const privateKey = randomBytes(32);
+const publicKey = schnorr.getPublicKey(privateKey);
+
+console.log('Private:', Buffer.from(privateKey).toString('hex'));
+console.log('Public:', Buffer.from(publicKey).toString('hex'));
+          </div>
+        </details>
+      </div>
+    </div>
+    
+    <!-- Step 2: Create or Join Multisig -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number" id="step2-number">2</div>
+        <h2 class="step-title">Create or Join a Multisig</h2>
+      </div>
+      <div class="step-content">
+        <p class="step-description">
+          Create a new shared wallet, or join one you've been invited to. Each signer brings their own key.
+        </p>
+        
+        <div class="flex-row" style="margin-top: 16px;">
+          <a href="/new" class="btn btn-primary">Create New Multisig →</a>
+          <button class="btn btn-secondary" onclick="document.getElementById('join-section').classList.toggle('hidden')">
+            Join with Invite Code
+          </button>
+        </div>
+        
+        <div id="join-section" class="hidden" style="margin-top: 20px;">
+          <div class="input-group">
+            <label>Invite Code</label>
+            <input type="text" id="invite-code" placeholder="e.g., a1b2c3d4">
+          </div>
+          <button class="btn btn-primary" onclick="goToInvite()">Join →</button>
+        </div>
+        
+        <details style="margin-top: 20px; color: var(--text-muted);">
+          <summary style="cursor: pointer; font-weight: 500;">Or via API</summary>
+          <div class="code-block">
+<span class="comment">// Create a 2-of-3 multisig</span>
+POST /v1/invites
+{
+  <span class="key">"name"</span>: <span class="string">"Treasury Bot Squad"</span>,
+  <span class="key">"chainId"</span>: <span class="string">"bitcoin-mainnet"</span>,
+  <span class="key">"threshold"</span>: 2,
+  <span class="key">"totalSigners"</span>: 3
+}
+
+<span class="comment">// Returns invite code to share with other signers</span>
+          </div>
+        </details>
+      </div>
+    </div>
+    
+    <!-- Step 3: Monitor for Proposals -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number">3</div>
+        <h2 class="step-title">Monitor for Proposals</h2>
+      </div>
+      <div class="step-content">
+        <p class="step-description">
+          Set up your agent to check for new spend proposals. When another signer creates a proposal, 
+          you'll see it and can decide whether to sign.
+        </p>
+        
+        <div class="code-block">
+<span class="comment">// Check every 15 minutes for pending proposals</span>
+GET /v1/proposals?multisigId=YOUR_MULTISIG_ID&status=pending
+
+<span class="comment">// Or get all proposals for your agent</span>
+GET /v1/agents/YOUR_AGENT_ID/proposals
+        </div>
+        
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 16px;">
+          💡 <strong>Tip:</strong> Set up a webhook when joining to get notified instantly instead of polling.
+        </p>
+      </div>
+    </div>
+    
+    <!-- Step 4: Sign Proposals -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number">4</div>
+        <h2 class="step-title">Sign Proposals</h2>
+      </div>
+      <div class="step-content">
+        <p class="step-description">
+          When you find a proposal you want to approve, get the sighash and sign it with your private key.
+        </p>
+        
+        <div class="code-block">
+<span class="comment">// 1. Get the proposal details (includes sighash)</span>
+GET /v1/proposals/PROPOSAL_ID
+
+<span class="comment">// Response includes:</span>
+{
+  <span class="key">"sighash"</span>: <span class="string">"e67a88ecf71969..."</span>,  <span class="comment">// Sign this</span>
+  <span class="key">"outputs"</span>: [...],  <span class="comment">// Where funds are going</span>
+  <span class="key">"signatures"</span>: [...]  <span class="comment">// Who's already signed</span>
+}
+
+<span class="comment">// 2. Sign the sighash with your key</span>
+const signature = schnorr.sign(sighash, privateKey);
+
+<span class="comment">// 3. Submit your signature</span>
+POST /v1/proposals/PROPOSAL_ID/sign
+{
+  <span class="key">"pubkey"</span>: <span class="string">"YOUR_PUBLIC_KEY"</span>,
+  <span class="key">"signature"</span>: <span class="string">"YOUR_SIGNATURE"</span>
+}
+        </div>
+        
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 16px;">
+          When enough signatures are collected (threshold met), the transaction is automatically 
+          finalized and broadcast to the network.
+        </p>
+      </div>
+    </div>
+    
+    <!-- What's Next -->
+    <div class="step" style="background: rgba(236, 72, 153, 0.05); border-color: rgba(236, 72, 153, 0.2);">
+      <div class="step-header">
+        <div class="step-number" style="background: var(--pink);">✓</div>
+        <h2 class="step-title">You're Ready!</h2>
+      </div>
+      <div class="step-content">
+        <p class="step-description">
+          Your agent can now participate in multi-party transactions across Bitcoin, Ethereum, Solana, and more.
+        </p>
+        
+        <div class="flex-row" style="margin-top: 20px;">
+          <a href="/docs" class="btn btn-primary">📚 Full API Docs</a>
+          <a href="/dashboard" class="btn btn-secondary">📊 Dashboard</a>
+          <a href="https://github.com/aetos53t/agent-multisig-api" class="btn btn-secondary">⭐ GitHub</a>
+        </div>
+        
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+          <p style="color: var(--text-muted); font-size: 14px;">
+            <strong>Need help?</strong> Check the <a href="/docs" style="color: var(--pink);">documentation</a> 
+            or open an issue on <a href="https://github.com/aetos53t/agent-multisig-api/issues" style="color: var(--pink);">GitHub</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script type="module">
+    // Import noble curves for key generation
+    import { schnorr } from 'https://esm.sh/@noble/curves@1.3.0/secp256k1';
+    import { bytesToHex } from 'https://esm.sh/@noble/hashes@1.3.3/utils';
+    
+    window.generateKeypair = function() {
+      // Generate 32 random bytes for private key
+      const privateKey = new Uint8Array(32);
+      crypto.getRandomValues(privateKey);
+      
+      // Derive public key (x-only for Schnorr/Taproot)
+      const publicKey = schnorr.getPublicKey(privateKey);
+      
+      // Display
+      document.getElementById('private-key').textContent = bytesToHex(privateKey);
+      document.getElementById('public-key').textContent = bytesToHex(publicKey);
+      document.getElementById('keypair-output').classList.remove('hidden');
+      document.getElementById('step1-number').classList.add('done');
+      document.getElementById('step1-number').textContent = '✓';
+      
+      // Store pubkey for convenience
+      localStorage.setItem('quorum_pubkey', bytesToHex(publicKey));
+    };
+    
+    window.goToInvite = function() {
+      const code = document.getElementById('invite-code').value.trim();
+      if (code) {
+        window.location.href = '/join/' + code;
+      }
+    };
+  </script>
+</body>
+</html>

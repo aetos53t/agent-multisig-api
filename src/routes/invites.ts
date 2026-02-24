@@ -28,6 +28,7 @@ const createInviteSchema = z.object({
 const joinSchema = z.object({
   name: z.string().min(1).max(100),
   publicKey: z.string().min(64).max(130),
+  webhookUrl: z.string().url().optional(), // For proposal notifications
 });
 
 /**
@@ -202,12 +203,19 @@ router.post('/:id/join', async (c) => {
     
     const slotIndex = emptySlots[0].slot_index;
     
-    // Fill slot
+    // Fill slot (note: webhook_url column may not exist in DB, so we store it separately)
     await sql`
       UPDATE invite_slots 
       SET name = ${input.name}, public_key = ${input.publicKey}, session_id = ${sessionId}, joined_at = NOW()
       WHERE invite_id = ${id} AND slot_index = ${slotIndex}
     `;
+    
+    // Store webhookUrl for later agent creation (in memory for now)
+    const slotWebhookUrls = (globalThis as any).__slotWebhookUrls || new Map();
+    if (input.webhookUrl) {
+      slotWebhookUrls.set(`${id}-${input.publicKey}`, input.webhookUrl);
+      (globalThis as any).__slotWebhookUrls = slotWebhookUrls;
+    }
     
     // Check if all slots filled
     const filledCount = await sql`
@@ -226,13 +234,16 @@ router.post('/:id/join', async (c) => {
       try {
         // Register agents
         const agentIds: string[] = [];
+        const slotWebhookUrls = (globalThis as any).__slotWebhookUrls || new Map();
         for (const slot of allSlots) {
           const agentId = `invite-${id}-${slot.public_key.slice(0, 8)}`;
+          const webhookUrl = slotWebhookUrls.get(`${id}-${slot.public_key}`);
           await repo.createAgent({
             id: agentId,
             name: slot.name,
             publicKey: slot.public_key,
             provider: 'custom',
+            webhookUrl: webhookUrl,
           });
           agentIds.push(agentId);
         }

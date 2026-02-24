@@ -331,6 +331,12 @@
         <div class="hint">For Bitcoin: 32-byte x-only pubkey (64 hex chars). For EVM: standard public key.</div>
       </div>
       
+      <div class="form-group">
+        <label>Webhook URL <span style="color: var(--text-muted); font-weight: normal;">(optional)</span></label>
+        <input type="text" id="webhook" placeholder="https://your-agent.com/webhook">
+        <div class="hint">Get notified when proposals are created. We'll POST { event, data } to this URL.</div>
+      </div>
+      
       <button class="btn btn-primary" id="join-btn" onclick="joinMultisig()">
         Join as Signer
       </button>
@@ -359,6 +365,15 @@
       <p style="text-align: center; color: var(--text-muted); font-size: 14px;">
         Share the invite link with other signers. The multisig address will be generated once everyone joins.
       </p>
+      
+      <!-- Agent Instructions (shown while waiting too) -->
+      <div style="margin-top: 1.5rem; background: rgba(59,130,246,0.1); border: 1px dashed rgba(59,130,246,0.5); border-radius: 12px; padding: 1rem;">
+        <h3 style="font-size: 0.9rem; font-weight: 600; color: #3b82f6; margin-bottom: 0.5rem;">🤖 Your Agent ID</h3>
+        <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 0.5rem; font-family: monospace; font-size: 0.75rem; color: #22c55e;" id="waiting-agent-id">...</div>
+        <p style="font-size: 0.75rem; color: rgba(255,255,255,0.5); margin-top: 0.5rem;">
+          Save this! You'll need it to check for pending proposals.
+        </p>
+      </div>
     </div>
     
     <!-- Ready state -->
@@ -391,6 +406,39 @@
       <button class="btn btn-secondary" onclick="refreshBalance()" style="margin-top: 0.5rem;">
         ↻ Refresh Balance
       </button>
+      
+      <!-- Proposals List -->
+      <div id="proposals-section" style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 style="font-size: 1.1rem; font-weight: 600;">Proposals</h2>
+          <button onclick="loadProposals()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.85rem;">↻ Refresh</button>
+        </div>
+        <div id="proposals-list" style="space-y: 0.75rem;">
+          <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">Loading proposals...</p>
+        </div>
+      </div>
+      
+      <!-- Agent Instructions -->
+      <div id="agent-instructions" style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+        <div style="background: rgba(59,130,246,0.1); border: 1px dashed rgba(59,130,246,0.5); border-radius: 12px; padding: 1.25rem;">
+          <h3 style="font-size: 1rem; font-weight: 600; color: #3b82f6; margin-bottom: 0.75rem;">🤖 Agent Instructions</h3>
+          <p style="font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 1rem;">
+            Set up a recurring check (every 15 min) to monitor for new proposals:
+          </p>
+          <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 0.75rem; font-family: monospace; font-size: 0.75rem; color: #22c55e; margin-bottom: 0.75rem;">
+            GET /v1/agents/<span id="my-agent-id">YOUR_AGENT_ID</span>/proposals
+          </div>
+          <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-bottom: 0.75rem;">
+            When you find a pending proposal:
+          </p>
+          <ol style="font-size: 0.8rem; color: rgba(255,255,255,0.6); padding-left: 1.25rem; margin-bottom: 0.75rem;">
+            <li style="margin-bottom: 0.25rem;">GET /v1/proposals/{id} → get sighash</li>
+            <li style="margin-bottom: 0.25rem;">Sign the sighash with your key</li>
+            <li style="margin-bottom: 0.25rem;">POST /v1/proposals/{id}/sign → submit signature</li>
+          </ol>
+          <a href="/docs" style="font-size: 0.8rem; color: #3b82f6;">📚 Full API Docs →</a>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -459,12 +507,25 @@
         // Multisig is ready
         document.getElementById('ready').classList.remove('hidden');
         document.getElementById('address').value = address;
-        // Fetch and display balance
+        // Fetch balance and proposals
         refreshBalance();
+        loadProposals();
+        
+        // Show agent ID in instructions
+        const savedAgentId = localStorage.getItem('quorum_agent_id');
+        if (savedAgentId) {
+          document.getElementById('my-agent-id').textContent = savedAgentId;
+        }
       } else if (myJoinedSlot) {
         // I've joined, waiting for others
         document.getElementById('waiting').classList.remove('hidden');
         document.getElementById('waiting-signers').innerHTML = signersHtml;
+        
+        // Show agent ID
+        const savedAgentId = localStorage.getItem('quorum_agent_id');
+        if (savedAgentId) {
+          document.getElementById('waiting-agent-id').textContent = savedAgentId;
+        }
         
         // Poll for updates
         setTimeout(init, 5000);
@@ -486,6 +547,7 @@
     async function joinMultisig() {
       const name = document.getElementById('name').value.trim();
       const pubkey = document.getElementById('pubkey').value.trim();
+      const webhook = document.getElementById('webhook').value.trim();
       
       if (!name) {
         showError('Please enter your name');
@@ -502,10 +564,13 @@
       btn.textContent = 'Joining...';
       
       try {
+        const payload = { name, publicKey: pubkey };
+        if (webhook) payload.webhookUrl = webhook;
+        
         const res = await fetch(`/v1/invites/${inviteId}/join`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, publicKey: pubkey }),
+          body: JSON.stringify(payload),
         });
         
         const data = await res.json();
@@ -513,6 +578,10 @@
         if (!data.success) {
           throw new Error(data.error?.message || 'Failed to join');
         }
+        
+        // Save agent ID (format: invite-{inviteId}-{pubkeyPrefix})
+        const agentId = `invite-${inviteId}-${pubkey.slice(0, 8)}`;
+        localStorage.setItem('quorum_agent_id', agentId);
         
         // Refresh state
         pendingMultisig = data.data;
@@ -545,6 +614,54 @@
       document.execCommand('copy');
       event.target.textContent = 'Copied!';
       setTimeout(() => event.target.textContent = 'Copy Address', 2000);
+    }
+    
+    async function loadProposals() {
+      if (!pendingMultisig?.multisigId) return;
+      
+      const listEl = document.getElementById('proposals-list');
+      
+      try {
+        const res = await fetch(`/v1/proposals?multisigId=${pendingMultisig.multisigId}`);
+        const data = await res.json();
+        
+        if (!data.success || !data.data?.length) {
+          listEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem; text-align: center;">No proposals yet</p>';
+          return;
+        }
+        
+        const statusColors = {
+          pending: '#eab308',
+          ready: '#3b82f6',
+          finalized: '#a855f7',
+          broadcast: '#22c55e',
+          confirmed: '#22c55e',
+        };
+        
+        listEl.innerHTML = data.data.map(p => {
+          const amount = p.outputs?.reduce((s, o) => s + parseInt(o.amount || 0), 0) || 0;
+          const sigCount = p.signatures?.length || 0;
+          const color = statusColors[p.status] || '#888';
+          
+          return `
+            <a href="/p/${p.id}" style="display: block; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 0.75rem; text-decoration: none; color: inherit;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="font-weight: 600;">${amount.toLocaleString()} sats</span>
+                <span style="background: ${color}22; color: ${color}; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${p.status}</span>
+              </div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">
+                → ${p.outputs?.[0]?.address?.slice(0, 20) || '?'}...
+              </div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+                ${sigCount}/${pendingMultisig.threshold} signatures
+              </div>
+            </a>
+          `;
+        }).join('');
+        
+      } catch (e) {
+        listEl.innerHTML = '<p style="color: #ef4444; font-size: 0.9rem; text-align: center;">Failed to load proposals</p>';
+      }
     }
     
     function createProposal() {

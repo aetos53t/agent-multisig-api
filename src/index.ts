@@ -22,6 +22,7 @@ import invitesRouter from './routes/invites';
 import roomRoutes, { handleProposalWebSocket, roomManager } from './services/rooms';
 import { createAuthMiddleware } from './middleware/auth';
 import { createRateLimitMiddleware } from './middleware/rateLimit';
+import repo from './db/repository';
 
 // ═══════════════════════════════════════════════════════════════════
 //                              APP
@@ -253,6 +254,34 @@ app.get('/propose', async (c) => {
   }
 });
 
+// Serve quickstart guide
+app.get('/quickstart', async (c) => {
+  try {
+    const strategies = [
+      `${import.meta.dir}/../rooms/quickstart.html`,
+      './rooms/quickstart.html',
+      '/app/rooms/quickstart.html',
+      `${process.cwd()}/rooms/quickstart.html`,
+    ];
+    
+    for (const path of strategies) {
+      try {
+        const file = Bun.file(path);
+        if (await file.exists()) {
+          const html = await file.text();
+          return c.html(html);
+        }
+      } catch {
+        // Try next strategy
+      }
+    }
+    
+    throw new Error('Quickstart page not found');
+  } catch {
+    return c.redirect('/');
+  }
+});
+
 // Serve unified room page (single link for everything)
 app.get('/room/:id', async (c) => {
   try {
@@ -283,12 +312,47 @@ app.get('/room/:id', async (c) => {
 
 // Serve proposal room UI
 app.get('/p/:id', async (c) => {
+  const proposalId = c.req.param('id');
+  const userAgent = c.req.header('User-Agent') || '';
+  const acceptHeader = c.req.header('Accept') || '';
+  
+  // Detect bots/agents - serve JSON instead of HTML
+  const botPatterns = [
+    /bot/i, /crawler/i, /spider/i, /curl/i, /wget/i, /python/i, 
+    /node/i, /axios/i, /fetch/i, /http/i, /claude/i, /gpt/i, 
+    /anthropic/i, /openai/i, /agent/i, /llm/i
+  ];
+  const isBot = botPatterns.some(p => p.test(userAgent)) || acceptHeader.includes('application/json');
+  
+  if (isBot) {
+    // Return JSON for bots
+    const proposal = await repo.getProposal(proposalId);
+    if (!proposal) {
+      return c.json({ 
+        success: false, 
+        error: { code: 'NOT_FOUND', message: 'Proposal not found' },
+        hint: 'Use GET /v1/proposals/:id for the API endpoint'
+      }, 404);
+    }
+    return c.json({
+      success: true,
+      hint: 'You are receiving JSON because you appear to be a bot. For the web UI, use a browser.',
+      apiDocs: 'https://quorumclaw.com/docs',
+      endpoints: {
+        getProposal: `GET /v1/proposals/${proposalId}`,
+        submitSignature: `POST /v1/proposals/${proposalId}/sign`,
+      },
+      data: proposal,
+    });
+  }
+  
+  // Serve HTML for browsers
   try {
     const strategies = [
-      `${import.meta.dir}/../rooms/index.html`,
-      './rooms/index.html',
-      '/app/rooms/index.html',
-      `${process.cwd()}/rooms/index.html`,
+      `${import.meta.dir}/../rooms/proposal.html`,
+      './rooms/proposal.html',
+      '/app/rooms/proposal.html',
+      `${process.cwd()}/rooms/proposal.html`,
     ];
     
     for (const roomPath of strategies) {

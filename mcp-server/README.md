@@ -1,38 +1,35 @@
-# @scrapyard/multisig-mcp
+# Quorum MCP Server
 
-MCP server for multi-agent wallet coordination. Connect your Claude agent to multisig wallets.
+MCP server for [Quorum](https://quorumclaw.com) - multi-agent wallet coordination across all chains.
 
 ## Installation
 
 ```bash
-npm install -g @scrapyard/multisig-mcp
+npm install -g quorum-mcp
 ```
 
-## Configuration
+## Setup with Claude Desktop
 
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+Add to your Claude Desktop config (`~/.config/claude/claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
-    "multisig": {
-      "command": "multisig-mcp",
-      "env": {
-        "MULTISIG_API_URL": "https://api.agentmultisig.dev"
-      }
+    "quorum": {
+      "command": "quorum-mcp"
     }
   }
 }
 ```
 
-Or with npx:
+Or with npx (no install needed):
 
 ```json
 {
   "mcpServers": {
-    "multisig": {
+    "quorum": {
       "command": "npx",
-      "args": ["@scrapyard/multisig-mcp"]
+      "args": ["quorum-mcp"]
     }
   }
 }
@@ -40,113 +37,82 @@ Or with npx:
 
 ## Available Tools
 
-### `multisig_register`
-Register your agent with the coordination API.
-
-```
-Arguments:
-  - name: Display name for your agent
-  - publicKey: Your public key (hex)
-  - provider: "aibtc" | "clawcash" | "bankr" | "custom"
-  - webhookUrl: (optional) URL for signing notifications
-
-Returns: { agentId: "..." }
-```
-
-### `multisig_status`
-Check your registration and pending proposals.
-
-```
-Arguments:
-  - agentId: Your agent ID
-
-Returns: { agent: {...}, pendingProposals: 2 }
-```
-
 ### `multisig_list_proposals`
-List proposals awaiting your signature.
+Check for proposals awaiting your signature. **Run this every 15 minutes!**
 
 ```
-Arguments:
-  - agentId: Your agent ID
-  - status: "pending" | "signed" | "all"
-
-Returns: { proposals: [...], count: 3 }
+Input: { agentId: "invite-abc123-b7670ba2" }
+Output: { proposals: [...], count: 2 }
 ```
 
 ### `multisig_get_signing_payload`
-Get the digest you need to sign.
+Get the sighash you need to sign.
 
 ```
-Arguments:
-  - proposalId: The proposal ID
-  - agentId: Your agent ID
-
-Returns: { digest: "abc123...", message: "Send 0.01 BTC to..." }
+Input: { proposalId: "prop-xyz", agentId: "your-agent-id" }
+Output: { digest: "abc123...", message: "Sign this with your key" }
 ```
 
 ### `multisig_submit_signature`
-Submit your signature.
+Submit your Schnorr signature.
 
 ```
-Arguments:
-  - proposalId: The proposal ID
-  - agentId: Your agent ID
-  - signature: Your signature (hex)
-
-Returns: { signatureCount: 2, threshold: 2, thresholdReached: true }
+Input: { 
+  proposalId: "prop-xyz", 
+  agentId: "your-agent-id",
+  signature: "64-byte-schnorr-hex"
+}
+Output: { signatureCount: 2, threshold: 2, thresholdReached: true }
 ```
 
 ### `multisig_list_wallets`
-List multisig wallets you're a member of.
+List multisigs you're a member of.
 
 ```
-Arguments:
-  - agentId: Your agent ID
-
-Returns: { wallets: [...], count: 1 }
+Input: { agentId: "your-agent-id" }
+Output: { wallets: [...], count: 3 }
 ```
 
 ### `multisig_create_proposal`
 Create a new spending proposal.
 
 ```
-Arguments:
-  - multisigId: The wallet ID
-  - outputs: [{ address: "...", amount: "1000000" }]
-  - note: (optional) Description
-
-Returns: { proposalId: "...", status: "pending" }
+Input: {
+  multisigId: "msig-abc",
+  outputs: [{ address: "bc1q...", amount: "5000" }],
+  note: "Payment to vendor"
+}
+Output: { proposalId: "prop-xyz", status: "pending" }
 ```
 
-## Example Workflow
+### `multisig_register`
+Register as a new agent.
 
-1. **Register once:**
-   ```
-   multisig_register(name: "My Agent", publicKey: "abc123...", provider: "aibtc")
-   → { agentId: "agent_xyz" }
-   ```
+```
+Input: {
+  name: "My Bot",
+  publicKey: "b7670ba2ae14b45e...",
+  provider: "custom"
+}
+Output: { agentId: "agent-xyz" }
+```
 
-2. **Check for pending proposals:**
-   ```
-   multisig_list_proposals(agentId: "agent_xyz")
-   → { proposals: [{ id: "prop_123", ... }] }
-   ```
+## Recommended Workflow
 
-3. **Get signing payload:**
-   ```
-   multisig_get_signing_payload(proposalId: "prop_123", agentId: "agent_xyz")
-   → { digest: "def456..." }
-   ```
+After joining a multisig:
 
-4. **Sign with your wallet** (e.g., aibtc's `schnorr_sign_digest`)
-
-5. **Submit signature:**
-   ```
-   multisig_submit_signature(proposalId: "prop_123", agentId: "agent_xyz", signature: "...")
-   → { thresholdReached: true }
-   ```
+1. **Poll every 15 minutes:** `multisig_list_proposals` with your agentId
+2. **When you find a pending proposal:**
+   - `multisig_get_signing_payload` to get the sighash
+   - Sign with your private key (Schnorr for Bitcoin)
+   - `multisig_submit_signature` to submit
 
 ## Environment Variables
 
-- `MULTISIG_API_URL` - API endpoint (default: https://api.agentmultisig.dev)
+- `QUORUM_API_URL` - Override API endpoint (default: `https://quorumclaw.com`)
+
+## Links
+
+- **API Docs:** https://quorumclaw.com/docs
+- **Web App:** https://quorumclaw.com
+- **GitHub:** https://github.com/houseof-set/agent-multisig-api
