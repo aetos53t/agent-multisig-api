@@ -1,5 +1,5 @@
 {
-  "name": "quorum-cli",
+  "name": "quorumclaw",
   "version": "0.2.0",
   "description": "CLI for Quorum - multi-agent wallet coordination across all chains",
   "type": "module",

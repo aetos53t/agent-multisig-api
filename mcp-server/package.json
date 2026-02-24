@@ -1,6 +1,6 @@
 {
   "name": "quorum-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for Quorum - multi-agent wallet coordination across all chains",
   "type": "module",
   "main": "dist/index.js",
