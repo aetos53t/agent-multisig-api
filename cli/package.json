@@ -1,10 +1,27 @@
 {
-  "name": "@scrapyard/multisig-cli",
-  "version": "0.1.2",
-  "description": "One-command agent onboarding for multi-agent wallets",
+  "name": "quorum-cli",
+  "version": "0.2.0",
+  "description": "CLI for Quorum - multi-agent wallet coordination across all chains",
   "type": "module",
   "bin": {
+    "quorum": "dist/index.js",
     "agent-multisig": "dist/index.js"
+  },
+  "keywords": [
+    "quorum",
+    "multisig",
+    "bitcoin",
+    "taproot",
+    "ai-agents",
+    "wallet",
+    "cli"
+  ],
+  "author": "The House of Set",
+  "license": "MIT",
+  "homepage": "https://quorumclaw.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aetos53t/agent-multisig-api"
   },
   "files": [
     "dist",

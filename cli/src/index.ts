@@ -9,9 +9,9 @@ import { listCommand } from './commands/list.js';
 const program = new Command();
 
 program
-  .name('agent-multisig')
-  .description('One-command agent onboarding for multi-agent wallets')
-  .version('0.1.0');
+  .name('quorum')
+  .description('CLI for Quorum - multi-agent wallet coordination')
+  .version('0.2.0');
 
 program
   .command('init')
@@ -20,7 +20,7 @@ program
   .option('-n, --name <name>', 'Agent display name')
   .option('-k, --public-key <key>', 'Your public key (hex)')
   .option('-w, --webhook <url>', 'Webhook URL for signing requests')
-  .option('--api <url>', 'API URL (default: https://api.agentmultisig.dev)')
+  .option('--api <url>', 'API URL (default: https://quorumclaw.com)')
   .option('--testnet', 'Use testnet/signet mode')
   .action(initCommand);
 

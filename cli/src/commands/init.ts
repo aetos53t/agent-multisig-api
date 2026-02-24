@@ -154,7 +154,7 @@ export async function initCommand(options: InitOptions) {
   }
   
   // Step 5: API URL
-  const apiUrl = options.api || 'https://api.agentmultisig.dev';
+  const apiUrl = options.api || 'https://quorumclaw.com';
   const testnet = options.testnet || false;
   
   // Step 6: Register!

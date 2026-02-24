@@ -19,7 +19,7 @@ const config = new Conf<AgentConfig>({
   projectName: 'agent-multisig',
   cwd: configPath,
   defaults: {
-    apiUrl: 'https://api.agentmultisig.dev',
+    apiUrl: 'https://quorumclaw.com',
     testnet: false
   }
 });
