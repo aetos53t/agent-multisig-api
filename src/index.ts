@@ -254,6 +254,34 @@ app.get('/propose', async (c) => {
   }
 });
 
+// Serve live stats page
+app.get('/stats', async (c) => {
+  try {
+    const strategies = [
+      `${import.meta.dir}/../rooms/stats.html`,
+      './rooms/stats.html',
+      '/app/rooms/stats.html',
+      `${process.cwd()}/rooms/stats.html`,
+    ];
+    
+    for (const path of strategies) {
+      try {
+        const file = Bun.file(path);
+        if (await file.exists()) {
+          const html = await file.text();
+          return c.html(html);
+        }
+      } catch {
+        // Try next strategy
+      }
+    }
+    
+    throw new Error('Stats page not found');
+  } catch {
+    return c.redirect('/');
+  }
+});
+
 // Serve quickstart guide
 app.get('/quickstart', async (c) => {
   try {
