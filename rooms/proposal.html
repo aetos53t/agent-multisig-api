@@ -456,7 +456,7 @@
       document.getElementById('api-proposal-id').textContent = proposal.id;
       
       // Update JSON-LD for scrapers/agents
-      const sighash = proposal.sighashes?.[0]?.sighash || proposal.sighash || null;
+      const sighashValue = proposal.sighashes?.[0]?.sighash || proposal.sighash || null;
       const jsonLd = {
         "@context": "https://schema.org",
         "@type": "DigitalDocument",
@@ -466,7 +466,7 @@
         "description": `${proposal.status} proposal for ${proposal.outputs?.reduce((s,o) => s + Number(o.amount), 0) || 0} sats`,
         "additionalProperty": [
           { "@type": "PropertyValue", "name": "status", "value": proposal.status },
-          { "@type": "PropertyValue", "name": "sighash", "value": sighash },
+          { "@type": "PropertyValue", "name": "sighash", "value": sighashValue },
           { "@type": "PropertyValue", "name": "threshold", "value": proposal.threshold || 2 },
           { "@type": "PropertyValue", "name": "signatures", "value": proposal.signatures?.length || 0 },
           { "@type": "PropertyValue", "name": "apiEndpoint", "value": `${API}/v1/proposals/${proposal.id}` },
