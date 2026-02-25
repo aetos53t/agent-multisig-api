@@ -6,6 +6,13 @@
  * Stack: Bun + Hono + PostgreSQL + @scure/btc-signer
  */
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -135,7 +142,7 @@ app.route('/v1', v1);
 app.get('/', async (c) => {
   // Try multiple path strategies for landing page
   const strategies = [
-    `${import.meta.dir}/../landing/index.html`,
+    `${__dirname}/../landing/index.html`,
     './landing/index.html',
     '/app/landing/index.html',
     `${process.cwd()}/landing/index.html`,
@@ -162,7 +169,7 @@ app.get('/', async (c) => {
     docs: '/docs',
     _debug: {
       cwd: process.cwd(),
-      metaDir: import.meta.dir,
+      metaDir: __dirname,
     }
   });
 });
@@ -174,7 +181,7 @@ app.get('/p', (c) => c.redirect('/'));
 app.get('/join/:id', async (c) => {
   try {
     const strategies = [
-      `${import.meta.dir}/../rooms/join.html`,
+      `${__dirname}/../rooms/join.html`,
       './rooms/join.html',
       '/app/rooms/join.html',
       `${process.cwd()}/rooms/join.html`,
@@ -202,7 +209,7 @@ app.get('/join/:id', async (c) => {
 app.get('/new', async (c) => {
   try {
     const strategies = [
-      `${import.meta.dir}/../rooms/new.html`,
+      `${__dirname}/../rooms/new.html`,
       './rooms/new.html',
       '/app/rooms/new.html',
       `${process.cwd()}/rooms/new.html`,
@@ -230,7 +237,7 @@ app.get('/new', async (c) => {
 app.get('/propose', async (c) => {
   try {
     const strategies = [
-      `${import.meta.dir}/../rooms/propose.html`,
+      `${__dirname}/../rooms/propose.html`,
       './rooms/propose.html',
       '/app/rooms/propose.html',
       `${process.cwd()}/rooms/propose.html`,
@@ -258,7 +265,7 @@ app.get('/propose', async (c) => {
 app.get('/stats', async (c) => {
   try {
     const strategies = [
-      `${import.meta.dir}/../rooms/stats.html`,
+      `${__dirname}/../rooms/stats.html`,
       './rooms/stats.html',
       '/app/rooms/stats.html',
       `${process.cwd()}/rooms/stats.html`,
@@ -286,7 +293,7 @@ app.get('/stats', async (c) => {
 app.get('/quickstart', async (c) => {
   try {
     const strategies = [
-      `${import.meta.dir}/../rooms/quickstart.html`,
+      `${__dirname}/../rooms/quickstart.html`,
       './rooms/quickstart.html',
       '/app/rooms/quickstart.html',
       `${process.cwd()}/rooms/quickstart.html`,
@@ -314,7 +321,7 @@ app.get('/quickstart', async (c) => {
 app.get('/room/:id', async (c) => {
   try {
     const strategies = [
-      `${import.meta.dir}/../rooms/room.html`,
+      `${__dirname}/../rooms/room.html`,
       './rooms/room.html',
       '/app/rooms/room.html',
       `${process.cwd()}/rooms/room.html`,
@@ -377,7 +384,7 @@ app.get('/p/:id', async (c) => {
   // Serve HTML for browsers
   try {
     const strategies = [
-      `${import.meta.dir}/../rooms/proposal.html`,
+      `${__dirname}/../rooms/proposal.html`,
       './rooms/proposal.html',
       '/app/rooms/proposal.html',
       `${process.cwd()}/rooms/proposal.html`,
@@ -405,7 +412,7 @@ app.get('/p/:id', async (c) => {
 app.get('/dashboard', async (c) => {
   try {
     const strategies = [
-      `${import.meta.dir}/../dashboard/index.html`,
+      `${__dirname}/../dashboard/index.html`,
       './dashboard/index.html',
       '/app/dashboard/index.html',
       `${process.cwd()}/dashboard/index.html`,
@@ -432,7 +439,7 @@ app.get('/dashboard', async (c) => {
 // Serve docs
 app.get('/docs', async (c) => {
   try {
-    const docsPath = `${import.meta.dir}/../docs/index.html`;
+    const docsPath = `${__dirname}/../docs/index.html`;
     const file = Bun.file(docsPath);
     if (await file.exists()) {
       const html = await file.text();
@@ -448,7 +455,7 @@ app.get('/docs', async (c) => {
 app.get('/docs/*', async (c) => {
   const filePath = c.req.path.replace('/docs/', '');
   try {
-    const fullPath = `${import.meta.dir}/../docs/${filePath}`;
+    const fullPath = `${__dirname}/../docs/${filePath}`;
     const file = Bun.file(fullPath);
     const content = await file.text();
     const ext = path.split('.').pop();
