@@ -152,23 +152,46 @@
 
     async function loadRoom() {
       try {
-        // Load invite data
-        const inviteRes = await fetch(`${API}/v1/invites/${inviteId}`);
-        const inviteJson = await inviteRes.json();
+        // First try loading as invite
+        let inviteRes = await fetch(`${API}/v1/invites/${inviteId}`);
+        let inviteJson = await inviteRes.json();
         
-        if (!inviteJson.success) {
-          document.getElementById('loading').innerHTML = `<span class="text-red-400">Room not found</span>`;
+        if (inviteJson.success) {
+          // It's an invite - use invite flow
+          roomData = inviteJson.data;
+          renderRoom();
+          
+          if (roomData.multisigId) {
+            await loadMultisig();
+            await loadProposals();
+          }
           return;
         }
         
-        roomData = inviteJson.data;
-        renderRoom();
+        // Not an invite - try loading as multisig directly
+        const msRes = await fetch(`${API}/v1/multisigs/${inviteId}`);
+        const msJson = await msRes.json();
         
-        // If multisig exists, load it and proposals
-        if (roomData.multisigId) {
-          await loadMultisig();
+        if (msJson.success) {
+          // It's a multisig ID - create synthetic room data
+          multisigData = msJson.data;
+          roomData = {
+            multisigId: msJson.data.id,
+            name: msJson.data.name,
+            chainId: msJson.data.chainId,
+            threshold: msJson.data.threshold,
+            slots: msJson.data.agents?.length || 0,
+            signers: msJson.data.agents || [],
+            status: 'ready'
+          };
+          renderRoom();
+          renderMultisig();
           await loadProposals();
+          return;
         }
+        
+        // Neither invite nor multisig found
+        document.getElementById('loading').innerHTML = `<span class="text-red-400">Room not found</span>`;
       } catch (err) {
         console.error(err);
         document.getElementById('loading').innerHTML = `<span class="text-red-400">Error loading room</span>`;
