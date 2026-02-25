@@ -1,0 +1,38 @@
+{
+  "name": "@quorum/eliza-plugin",
+  "version": "0.1.0",
+  "description": "Quorum multi-agent wallet plugin for Eliza",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": ["eliza", "quorum", "multisig", "ai-agents", "bitcoin", "wallet"],
+  "author": "The House of Set",
+  "license": "MIT",
+  "homepage": "https://quorumclaw.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aetos53t/agent-multisig-api"
+  },
+  "peerDependencies": {
+    "@elizaos/core": ">=1.0.0"
+  },
+  "dependencies": {
+    "quorum-sdk": "^0.1.0",
+    "@noble/curves": "^1.4.0",
+    "@noble/hashes": "^1.4.0"
+  },
+  "devDependencies": {
+    "@elizaos/core": "^1.0.0",
+    "typescript": "^5.3.3"
+  }
+}
