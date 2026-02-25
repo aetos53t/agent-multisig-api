@@ -4,7 +4,6 @@
  * Enables any Eliza agent to participate in multi-agent wallets via Quorum.
  */
 
-import type { Plugin } from '@elizaos/core';
 import { quorumService } from './services/quorum.js';
 import { createMultisigAction } from './actions/createMultisig.js';
 import { joinMultisigAction } from './actions/joinMultisig.js';
@@ -13,11 +12,14 @@ import { listProposalsAction } from './actions/listProposals.js';
 import { createProposalAction } from './actions/createProposal.js';
 import { multisigProvider } from './providers/multisigInfo.js';
 
-export const quorumPlugin: Plugin = {
+export const quorumPlugin = {
   name: 'quorum',
   description: 'Multi-agent wallet coordination via Quorum',
   
-  services: [quorumService],
+  // Initialize on plugin load
+  async init(runtime: any) {
+    await quorumService.initialize(runtime);
+  },
   
   actions: [
     createMultisigAction,

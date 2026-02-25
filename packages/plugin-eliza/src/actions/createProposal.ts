@@ -1,7 +1,7 @@
-import { Action, IAgentRuntime, Memory, State, HandlerCallback } from '@elizaos/core';
+
 import { quorumService } from '../services/quorum.js';
 
-export const createProposalAction: Action = {
+export const createProposalAction = {
   name: 'QUORUM_CREATE_PROPOSAL',
   description: 'Create a new spending proposal in a multi-agent wallet',
   
@@ -20,19 +20,19 @@ export const createProposalAction: Action = {
     ],
   ],
   
-  validate: async (runtime: IAgentRuntime, message: Memory): Promise<boolean> => {
+  validate: async (runtime: any, message: any): Promise<any> => {
     const text = message.content?.text?.toLowerCase() || '';
     return (text.includes('send') || text.includes('propose') || text.includes('transfer')) && 
            (text.includes('multisig') || text.includes('treasury') || text.includes('proposal') || text.includes('sats'));
   },
   
   handler: async (
-    runtime: IAgentRuntime,
-    message: Memory,
-    state: State,
+    runtime: any,
+    message: any,
+    state: any,
     options: Record<string, unknown>,
-    callback?: HandlerCallback
-  ): Promise<boolean> => {
+    callback?: any
+  ): Promise<any> => {
     try {
       const text = message.content?.text || '';
       

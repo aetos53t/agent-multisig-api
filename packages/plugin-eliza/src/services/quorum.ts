@@ -4,7 +4,6 @@
  * Manages connection to Quorum API and handles signing operations.
  */
 
-import { Service, ServiceType, IAgentRuntime } from '@elizaos/core';
 import { schnorr } from '@noble/curves/secp256k1';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 
@@ -36,24 +35,20 @@ export interface QuorumProposal {
   createdAt: string;
 }
 
-class QuorumService extends Service {
-  static readonly serviceType = ServiceType.TEXT_GENERATION; // Use available type
-  
+class QuorumService {
   private agentId: string | null = null;
   private publicKey: string | null = null;
   private privateKey: Uint8Array | null = null;
-  private runtime: IAgentRuntime | null = null;
   
   get capabilityDescription(): string {
     return 'Multi-agent wallet coordination via Quorum';
   }
   
-  async initialize(runtime: IAgentRuntime): Promise<void> {
-    this.runtime = runtime;
-    
+  async initialize(runtime: any): Promise<void> {
     // Try to get private key from runtime settings
-    const privateKeyHex = runtime.getSetting('QUORUM_PRIVATE_KEY') || 
-                          runtime.getSetting('WALLET_PRIVATE_KEY');
+    const privateKeyHex = runtime.getSetting?.('QUORUM_PRIVATE_KEY') || 
+                          runtime.getSetting?.('WALLET_PRIVATE_KEY') ||
+                          process.env.QUORUM_PRIVATE_KEY;
     
     if (!privateKeyHex) {
       console.warn('[Quorum] No private key configured. Set QUORUM_PRIVATE_KEY or WALLET_PRIVATE_KEY.');
@@ -61,7 +56,8 @@ class QuorumService extends Service {
     }
     
     try {
-      this.privateKey = hexToBytes(privateKeyHex.replace('0x', ''));
+      const keyHex = String(privateKeyHex).replace('0x', '');
+      this.privateKey = hexToBytes(keyHex);
       this.publicKey = bytesToHex(schnorr.getPublicKey(this.privateKey));
       
       // Register with Quorum

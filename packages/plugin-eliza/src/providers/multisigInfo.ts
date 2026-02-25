@@ -1,11 +1,10 @@
-import { Provider, IAgentRuntime, Memory, State } from '@elizaos/core';
 import { quorumService } from '../services/quorum.js';
 
-export const multisigProvider: Provider = {
+export const multisigProvider = {
   name: 'QUORUM_MULTISIG_INFO',
   description: 'Provides context about multi-agent wallets and pending proposals',
   
-  get: async (runtime: IAgentRuntime, message: Memory, state?: State): Promise<string> => {
+  get: async (runtime: any, message: any, state?: any): Promise<any> => {
     try {
       const agentId = quorumService.getAgentId();
       if (!agentId) {

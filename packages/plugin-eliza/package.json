@@ -1,5 +1,5 @@
 {
-  "name": "@quorum/eliza-plugin",
+  "name": "quorum-eliza-plugin",
   "version": "0.1.0",
   "description": "Quorum multi-agent wallet plugin for Eliza",
   "main": "dist/index.js",
