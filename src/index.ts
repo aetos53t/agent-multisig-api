@@ -561,3 +561,10 @@ const server = Bun.serve({
 
 export default server;
 // Auto-migrate v0.2.0 - Coordination Layer
+
+// Redirect /rooms/room.html?id=xxx to /room/xxx
+app.get('/rooms/room.html', (c) => {
+  const id = c.req.query('id');
+  if (id) return c.redirect(`/room/${id}`);
+  return c.redirect('/');
+});
