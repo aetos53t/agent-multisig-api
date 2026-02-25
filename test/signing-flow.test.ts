@@ -4,7 +4,7 @@
  * Tests the critical path: create proposal -> sign -> finalize
  */
 
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { createP2TRMultisig } from '../src/services/taproot';
 import { createPSBT } from '../src/services/psbt';
 

@@ -72,18 +72,26 @@ function getApiUrl(chainId: ChainId): string {
   return config.mempoolApiUrl;
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-    },
-  });
+async function fetchJson<T>(url: string, timeoutMs = 8000): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+      },
+      signal: controller.signal,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+    
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
   }
-  
-  return response.json();
 }
 
 async function postText(url: string, body: string): Promise<string> {

@@ -4,7 +4,7 @@
  * Run with: bun test test/taproot.test.ts
  */
 
-import { describe, test, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 import { hex } from '@scure/base';
 import { secp256k1 } from '@noble/curves/secp256k1';
 import {
@@ -36,7 +36,7 @@ const ARBITRARY_32_BYTES = [
 ];
 
 describe('Tapscript Construction', () => {
-  test('builds valid 2-of-2 script', () => {
+  it('builds valid 2-of-2 script', () => {
     // Use arbitrary bytes for script-only tests (no secp256k1 validation)
     const pubkeys = ARBITRARY_32_BYTES.slice(0, 2).map(hex.decode);
     const script = buildChecksigAddScript(pubkeys, 2);
@@ -57,7 +57,7 @@ describe('Tapscript Construction', () => {
     expect(script[script.length - 1]).toBe(0x9c); // OP_NUMEQUAL
   });
   
-  test('builds valid 2-of-3 script', () => {
+  it('builds valid 2-of-3 script', () => {
     const pubkeys = ARBITRARY_32_BYTES.map(hex.decode);
     const script = buildChecksigAddScript(pubkeys, 2);
     
@@ -65,7 +65,7 @@ describe('Tapscript Construction', () => {
     expect(script.length).toBe(104);
   });
   
-  test('throws on invalid threshold', () => {
+  it('throws on invalid threshold', () => {
     const pubkeys = ARBITRARY_32_BYTES.slice(0, 2).map(hex.decode);
     
     expect(() => buildChecksigAddScript(pubkeys, 0)).toThrow();
@@ -73,14 +73,14 @@ describe('Tapscript Construction', () => {
     expect(() => buildChecksigAddScript(pubkeys, 3)).toThrow(); // More than pubkeys
   });
   
-  test('throws on invalid pubkey length', () => {
+  it('throws on invalid pubkey length', () => {
     const badPubkey = new Uint8Array(31); // Too short
     expect(() => buildChecksigAddScript([badPubkey], 1)).toThrow();
   });
 });
 
 describe('Multisig Leaves', () => {
-  test('generates correct number of leaves for 2-of-3', () => {
+  it('generates correct number of leaves for 2-of-3', () => {
     const pubkeys = ARBITRARY_32_BYTES.map(hex.decode);
     const leaves = buildMultisigLeaves(pubkeys, 2);
     
@@ -88,7 +88,7 @@ describe('Multisig Leaves', () => {
     expect(leaves.length).toBe(3);
   });
   
-  test('generates correct number of leaves for 2-of-4', () => {
+  it('generates correct number of leaves for 2-of-4', () => {
     const pubkeys = [...ARBITRARY_32_BYTES, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa']
       .map(hex.decode);
     const leaves = buildMultisigLeaves(pubkeys, 2);
@@ -97,7 +97,7 @@ describe('Multisig Leaves', () => {
     expect(leaves.length).toBe(6);
   });
   
-  test('generates correct number of leaves for 3-of-5', () => {
+  it('generates correct number of leaves for 3-of-5', () => {
     const pubkeys = [
       ...ARBITRARY_32_BYTES,
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -109,7 +109,7 @@ describe('Multisig Leaves', () => {
     expect(leaves.length).toBe(10);
   });
   
-  test('tracks pubkey indices correctly', () => {
+  it('tracks pubkey indices correctly', () => {
     const pubkeys = ARBITRARY_32_BYTES.map(hex.decode);
     const leaves = buildMultisigLeaves(pubkeys, 2);
     
@@ -125,7 +125,7 @@ describe('Multisig Leaves', () => {
 });
 
 describe('P2TR Multisig Address', () => {
-  test('creates valid mainnet address', () => {
+  it('creates valid mainnet address', () => {
     const result = createP2TRMultisig(TEST_PUBKEYS, 2, 'bitcoin-mainnet');
     
     expect(result.address).toMatch(/^bc1p[a-z0-9]{58}$/);
@@ -135,19 +135,19 @@ describe('P2TR Multisig Address', () => {
     expect(result.scriptTree.leaves.length).toBe(3);
   });
   
-  test('creates valid testnet address', () => {
+  it('creates valid testnet address', () => {
     const result = createP2TRMultisig(TEST_PUBKEYS, 2, 'bitcoin-testnet');
     
     expect(result.address).toMatch(/^tb1p[a-z0-9]{58}$/);
   });
   
-  test('creates valid signet address', () => {
+  it('creates valid signet address', () => {
     const result = createP2TRMultisig(TEST_PUBKEYS, 2, 'bitcoin-signet');
     
     expect(result.address).toMatch(/^tb1p[a-z0-9]{58}$/);
   });
   
-  test('produces deterministic address', () => {
+  it('produces deterministic address', () => {
     const result1 = createP2TRMultisig(TEST_PUBKEYS, 2, 'bitcoin-mainnet');
     const result2 = createP2TRMultisig(TEST_PUBKEYS, 2, 'bitcoin-mainnet');
     
@@ -155,7 +155,7 @@ describe('P2TR Multisig Address', () => {
     expect(result1.tweakedPubkey).toBe(result2.tweakedPubkey);
   });
   
-  test('different pubkey order produces different address (tree structure differs)', () => {
+  it('different pubkey order produces different address (tree structure differs)', () => {
     const reversed = [...TEST_PUBKEYS].reverse();
     const result1 = createP2TRMultisig(TEST_PUBKEYS, 2, 'bitcoin-mainnet');
     const result2 = createP2TRMultisig(reversed, 2, 'bitcoin-mainnet');
@@ -165,7 +165,7 @@ describe('P2TR Multisig Address', () => {
     expect(result1.address).not.toBe(result2.address);
   });
   
-  test('sorted pubkeys produce same address', () => {
+  it('sorted pubkeys produce same address', () => {
     const sorted1 = [...TEST_PUBKEYS].sort();
     const sorted2 = [...TEST_PUBKEYS].sort();
     const result1 = createP2TRMultisig(sorted1, 2, 'bitcoin-mainnet');
@@ -174,7 +174,7 @@ describe('P2TR Multisig Address', () => {
     expect(result1.address).toBe(result2.address);
   });
   
-  test('different threshold produces different address', () => {
+  it('different threshold produces different address', () => {
     // Need at least 3 pubkeys for this test
     const result2of3 = createP2TRMultisig(TEST_PUBKEYS, 2, 'bitcoin-mainnet');
     const result3of3 = createP2TRMultisig(TEST_PUBKEYS, 3, 'bitcoin-mainnet');
@@ -182,7 +182,7 @@ describe('P2TR Multisig Address', () => {
     expect(result2of3.address).not.toBe(result3of3.address);
   });
   
-  test('each leaf has script data', () => {
+  it('each leaf has script data', () => {
     const result = createP2TRMultisig(TEST_PUBKEYS, 2, 'bitcoin-mainnet');
     
     for (const leaf of result.leaves) {
@@ -198,24 +198,24 @@ describe('P2TR Multisig Address', () => {
 });
 
 describe('Pubkey Conversion', () => {
-  test('passes through x-only pubkey', () => {
+  it('passes through x-only pubkey', () => {
     const xOnly = TEST_PUBKEYS[0];
     expect(compressedToXOnly(xOnly)).toBe(xOnly);
   });
   
-  test('strips prefix from compressed pubkey', () => {
+  it('strips prefix from compressed pubkey', () => {
     const xOnly = TEST_PUBKEYS[0];
     const compressed = '02' + xOnly;
     expect(compressedToXOnly(compressed)).toBe(xOnly);
   });
   
-  test('works with 03 prefix too', () => {
+  it('works with 03 prefix too', () => {
     const xOnly = TEST_PUBKEYS[0];
     const compressed = '03' + xOnly;
     expect(compressedToXOnly(compressed)).toBe(xOnly);
   });
   
-  test('throws on invalid length', () => {
+  it('throws on invalid length', () => {
     expect(() => compressedToXOnly('abc')).toThrow();
     expect(() => compressedToXOnly('a'.repeat(68))).toThrow();
   });
