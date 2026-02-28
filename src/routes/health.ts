@@ -32,7 +32,7 @@ router.get('/', async (c) => {
   return c.json({
     status: dbConnected ? 'healthy' : 'degraded',
     timestamp: new Date().toISOString(),
-    version: '0.3.2',
+    version: '0.3.3',
     storage: stats.usingDatabase ? 'postgresql' : 'in-memory',
     checks: {
       database: dbConnected ? 'ok' : 'not-connected',

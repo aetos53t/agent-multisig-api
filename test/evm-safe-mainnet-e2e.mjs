@@ -14,7 +14,7 @@ import { randomBytes } from 'crypto';
 import * as secp from '@noble/secp256k1';
 import { keccak256, toHex } from 'viem';
 
-const API_URL = 'https://quorumclaw.com';
+const API_URL = process.env.API_URL || 'https://quorumclaw.com';
 
 // Our funded account
 const FUNDER_KEY = '0x' + randomBytes(32).toString('hex'); // Will generate new one

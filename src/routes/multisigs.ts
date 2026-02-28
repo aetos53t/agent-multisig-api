@@ -23,6 +23,8 @@ import { isEVMChain, predictSafeAddress } from '../adapters/evm-safe';
 import { isSolanaChain, SolanaSquadsAdapter } from '../adapters/solana-squads';
 import { Keypair } from '@solana/web3.js';
 import repo from '../db/repository';
+import { keccak256, toHex } from 'viem';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
 
 // Chain type detection
 function isBitcoinChain(chainId: string): boolean {
@@ -191,13 +193,9 @@ router.post('/', async (c) => {
         }
         // Compressed public key (33 bytes = 66 hex chars, starts with 02 or 03)
         if ((a.publicKey.startsWith('02') || a.publicKey.startsWith('03')) && a.publicKey.length === 66) {
-          // Derive address from compressed pubkey
-          const { keccak256, toHex } = require('viem');
-          const { secp256k1 } = require('@noble/curves/secp256k1');
-          
-          // Decompress to get uncompressed pubkey (remove prefix)
-          const point = secp256k1.ProjectivePoint.fromHex(a.publicKey);
-          const uncompressed = point.toRawBytes(false).slice(1); // Remove 04 prefix
+          // Decompress to get uncompressed pubkey (remove 04 prefix)
+          const point = secp256k1.Point.fromHex(a.publicKey);
+          const uncompressed = point.toBytes(false).slice(1); // Remove 04 prefix, keep X and Y
           
           // Keccak256 of uncompressed pubkey (without 04 prefix), take last 20 bytes
           const hash = keccak256(toHex(uncompressed));
@@ -206,7 +204,6 @@ router.post('/', async (c) => {
         }
         // Uncompressed public key (65 bytes = 130 hex chars, starts with 04)
         if (a.publicKey.startsWith('04') && a.publicKey.length === 130) {
-          const { keccak256 } = require('viem');
           // Take bytes after 04 prefix
           const pubkeyBytes = Buffer.from(a.publicKey.slice(2), 'hex');
           const hash = keccak256(pubkeyBytes);
