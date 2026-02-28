@@ -26,6 +26,7 @@ export async function createAgent(agent: Agent): Promise<Agent> {
     return agent;
   }
 
+  // Use upsert to handle existing agents gracefully
   await sql`
     INSERT INTO agents (id, name, public_key, x_only_pubkey, provider, webhook_url, metadata)
     VALUES (
@@ -37,6 +38,10 @@ export async function createAgent(agent: Agent): Promise<Agent> {
       ${agent.webhookUrl || null},
       ${JSON.stringify(agent.metadata || {})}
     )
+    ON CONFLICT (id) DO UPDATE SET
+      name = EXCLUDED.name,
+      webhook_url = COALESCE(EXCLUDED.webhook_url, agents.webhook_url),
+      updated_at = NOW()
   `;
   return agent;
 }

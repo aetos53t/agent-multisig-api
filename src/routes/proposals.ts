@@ -200,6 +200,27 @@ router.post('/', async (c) => {
       passwordHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
     
+    // Find a valid createdBy agent ID - must exist in DB
+    let createdBy = selectedLeaf.signerAgentIds[0] || 'unknown';
+    const creatorCheck = await repo.getAgent(createdBy);
+    if (!creatorCheck) {
+      // Agent ID from scriptTree doesn't exist - find agent by pubkey instead
+      const agents = await repo.getAgentsForMultisig(multisig.id);
+      if (agents.length > 0) {
+        createdBy = agents[0].id;
+      } else {
+        // Create a placeholder agent if none exist
+        const placeholderId = `system-${multisig.id.slice(0, 8)}`;
+        await repo.createAgent({
+          id: placeholderId,
+          name: 'System',
+          publicKey: multisig.internalPubkey || '0'.repeat(64),
+          provider: 'custom',
+        });
+        createdBy = placeholderId;
+      }
+    }
+    
     const proposal: Proposal = {
       id: proposalId,
       multisigId: input.multisigId,
@@ -218,7 +239,7 @@ router.post('/', async (c) => {
       unsignedTx: psbtResult.psbt,
       note: input.note,
       createdAt: now,
-      createdBy: selectedLeaf.signerAgentIds[0] || 'unknown',
+      createdBy,
       expiresAt,
       visibility: input.visibility || 'public',
       passwordHash,
@@ -388,7 +409,12 @@ router.get('/:id/payload/:agentId', async (c) => {
     }, 404);
   }
   
-  if (!proposal.requiredSigners.includes(agentId)) {
+  // Check if agent is in requiredSigners OR is a member of the multisig
+  const multisigCheck = await repo.getMultisig(proposal.multisigId);
+  const isRequiredSigner = proposal.requiredSigners.includes(agentId);
+  const isMultisigMember = multisigCheck?.agents?.some(a => a.id === agentId);
+  
+  if (!isRequiredSigner && !isMultisigMember) {
     return c.json<ApiResponse<never>>({
       success: false,
       error: { code: 'NOT_AUTHORIZED', message: `Agent ${agentId} is not a required signer` },
@@ -489,14 +515,18 @@ router.post('/:id/sign', async (c) => {
     }, 400);
   }
   
-  if (!proposal.requiredSigners.includes(agentId)) {
+  const multisig = await repo.getMultisig(proposal.multisigId);
+  
+  // Check if agent is in requiredSigners OR is a member of the multisig
+  const isRequiredSigner = proposal.requiredSigners.includes(agentId);
+  const isMultisigMember = multisig?.agents?.some(a => a.id === agentId);
+  
+  if (!isRequiredSigner && !isMultisigMember) {
     return c.json<ApiResponse<never>>({
       success: false,
       error: { code: 'NOT_AUTHORIZED', message: `Agent ${agentId} is not a required signer` },
     }, 403);
   }
-  
-  const multisig = await repo.getMultisig(proposal.multisigId);
   if (!multisig) {
     return c.json<ApiResponse<never>>({
       success: false,

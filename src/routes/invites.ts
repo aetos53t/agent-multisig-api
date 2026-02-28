@@ -12,7 +12,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import repo from '../db/repository';
 import sql from '../db';
-import { createP2TRMultisig } from '../services/taproot';
+import { createP2TRMultisig, compressedToXOnly } from '../services/taproot';
 
 const router = new Hono();
 
@@ -232,19 +232,31 @@ router.post('/:id/join', async (c) => {
       `;
       
       try {
-        // Register agents
+        // Register agents - REUSE existing agents by pubkey
         const agentIds: string[] = [];
         const slotWebhookUrls = (globalThis as any).__slotWebhookUrls || new Map();
         for (const slot of allSlots) {
-          const agentId = `invite-${id}-${slot.public_key.slice(0, 8)}`;
-          const webhookUrl = slotWebhookUrls.get(`${id}-${slot.public_key}`);
-          await repo.createAgent({
-            id: agentId,
-            name: slot.name,
-            publicKey: slot.public_key,
-            provider: 'custom',
-            webhookUrl: webhookUrl,
-          });
+          // Check if agent with this pubkey already exists
+          const existingAgents = await sql`
+            SELECT id FROM agents WHERE public_key = ${slot.public_key} LIMIT 1
+          `;
+          
+          let agentId: string;
+          if (existingAgents.length > 0) {
+            // Reuse existing agent
+            agentId = existingAgents[0].id;
+          } else {
+            // Create new agent with pubkey-based ID (not invite-specific)
+            agentId = `agent-${slot.public_key.slice(0, 16)}`;
+            const webhookUrl = slotWebhookUrls.get(`${id}-${slot.public_key}`);
+            await repo.createAgent({
+              id: agentId,
+              name: slot.name,
+              publicKey: slot.public_key,
+              provider: 'custom',
+              webhookUrl: webhookUrl,
+            });
+          }
           agentIds.push(agentId);
         }
         
@@ -253,7 +265,8 @@ router.post('/:id/join', async (c) => {
         let taprootData: any = null;
         
         if (invite.chain_id.startsWith('bitcoin')) {
-          const pubkeys = allSlots.map((s: any) => s.public_key);
+          // Normalize pubkeys to x-only (64 chars) - accept both compressed (66) and x-only (64)
+          const pubkeys = allSlots.map((s: any) => compressedToXOnly(s.public_key));
           const result = createP2TRMultisig(pubkeys, invite.threshold, invite.chain_id as any);
           address = result.address;
           taprootData = {
@@ -266,17 +279,27 @@ router.post('/:id/join', async (c) => {
           address = `pending-${id}`;
         }
         
-        // Build pubkey -> agentId map
+        // Build pubkey -> agentId map (store BOTH compressed and x-only versions)
         const pubkeyToAgentId = new Map<string, string>();
         for (let i = 0; i < allSlots.length; i++) {
-          pubkeyToAgentId.set(allSlots[i].public_key, agentIds[i]);
+          const compressed = allSlots[i].public_key;
+          const xOnly = compressedToXOnly(compressed);
+          pubkeyToAgentId.set(compressed, agentIds[i]); // 66 char compressed
+          pubkeyToAgentId.set(xOnly, agentIds[i]);      // 64 char x-only
         }
         
         // Populate signerAgentIds in scriptTree leaves
+        // Note: leaf.signerPubkeys are x-only (64 chars) from createP2TRMultisig
         if (taprootData?.scriptTree?.leaves) {
           for (const leaf of taprootData.scriptTree.leaves) {
             if (leaf.signerPubkeys) {
-              leaf.signerAgentIds = leaf.signerPubkeys.map((pk: string) => pubkeyToAgentId.get(pk) || '');
+              leaf.signerAgentIds = leaf.signerPubkeys.map((pk: string) => {
+                const agentId = pubkeyToAgentId.get(pk);
+                if (!agentId) {
+                  console.warn(`Warning: No agent found for pubkey ${pk.slice(0, 16)}...`);
+                }
+                return agentId || '';
+              });
             }
           }
         }
@@ -343,6 +366,16 @@ router.post('/:id/join', async (c) => {
     const updatedInvites = await sql`SELECT * FROM invites WHERE id = ${id}`;
     const updatedInvite = updatedInvites[0];
     
+    // Return the agent ID - either existing or predictable pattern
+    // Agent IDs are deterministic: agent-{first16CharsOfPubkey}
+    const joinedAgentId = await (async () => {
+      // First check if agent already exists
+      const agents = await sql`SELECT id FROM agents WHERE public_key = ${input.publicKey} LIMIT 1`;
+      if (agents[0]?.id) return agents[0].id;
+      // If not yet created (waiting for other signers), return the predictable ID
+      return `agent-${input.publicKey.slice(0, 16)}`;
+    })();
+    
     return c.json({
       success: true,
       data: {
@@ -354,6 +387,8 @@ router.post('/:id/join', async (c) => {
         address: updatedInvite.address || undefined,
         multisigId: updatedInvite.multisig_id || undefined,
         createdAt: updatedInvite.created_at.toISOString(),
+        // IMPORTANT: Return the agent ID so bots know it immediately
+        agentId: joinedAgentId,
       },
     });
     

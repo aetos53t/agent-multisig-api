@@ -180,15 +180,40 @@ router.post('/', async (c) => {
     //                    EVM (Safe / Gnosis Safe)
     // ═══════════════════════════════════════════════════════════════
     else if (isEVMChain(input.chainId as ChainId)) {
-      // For EVM, publicKey should be an Ethereum address (0x...)
+      // For EVM, publicKey can be:
+      // 1. An Ethereum address (0x... 42 chars)
+      // 2. A compressed public key (02/03... 66 hex chars)
+      // 3. An uncompressed public key (04... 130 hex chars)
       const owners = sortedAgents.map(a => {
         // If pubkey starts with 0x and is 42 chars, it's already an address
         if (a.publicKey.startsWith('0x') && a.publicKey.length === 42) {
           return a.publicKey as `0x${string}`;
         }
-        // Otherwise it might be a compressed/uncompressed pubkey - derive address
-        // For now, require addresses directly
-        throw new Error(`Agent ${a.id}: EVM requires Ethereum address (0x...) as publicKey`);
+        // Compressed public key (33 bytes = 66 hex chars, starts with 02 or 03)
+        if ((a.publicKey.startsWith('02') || a.publicKey.startsWith('03')) && a.publicKey.length === 66) {
+          // Derive address from compressed pubkey
+          const { keccak256, toHex } = require('viem');
+          const { secp256k1 } = require('@noble/curves/secp256k1');
+          
+          // Decompress to get uncompressed pubkey (remove prefix)
+          const point = secp256k1.ProjectivePoint.fromHex(a.publicKey);
+          const uncompressed = point.toRawBytes(false).slice(1); // Remove 04 prefix
+          
+          // Keccak256 of uncompressed pubkey (without 04 prefix), take last 20 bytes
+          const hash = keccak256(toHex(uncompressed));
+          const address = `0x${hash.slice(-40)}` as `0x${string}`;
+          return address;
+        }
+        // Uncompressed public key (65 bytes = 130 hex chars, starts with 04)
+        if (a.publicKey.startsWith('04') && a.publicKey.length === 130) {
+          const { keccak256 } = require('viem');
+          // Take bytes after 04 prefix
+          const pubkeyBytes = Buffer.from(a.publicKey.slice(2), 'hex');
+          const hash = keccak256(pubkeyBytes);
+          const address = `0x${hash.slice(-40)}` as `0x${string}`;
+          return address;
+        }
+        throw new Error(`Agent ${a.id}: Invalid publicKey format for EVM. Expected address (0x...) or compressed pubkey (02.../03...)`);
       });
       
       // Predict Safe address (deterministic via CREATE2)

@@ -253,3 +253,23 @@ router.get('/', async (c) => {
 });
 
 export default router;
+
+/**
+ * GET /agents/by-pubkey/:pubkey - Look up agent by public key
+ */
+router.get('/by-pubkey/:pubkey', async (c) => {
+  const pubkey = c.req.param('pubkey');
+  
+  const agents = await repo.listAgents();
+  const agent = agents.find(a => 
+    a.publicKey === pubkey || 
+    a.publicKey?.slice(2) === pubkey ||  // compressed without prefix
+    a.xOnlyPubkey === pubkey
+  );
+  
+  if (!agent) {
+    return c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Agent not found' } }, 404);
+  }
+  
+  return c.json({ success: true, data: agent });
+});

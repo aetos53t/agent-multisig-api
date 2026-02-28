@@ -124,9 +124,10 @@
           <div id="modal-sighash" class="font-mono text-xs break-all text-pink-400"></div>
         </div>
         <div class="mb-4">
-          <label class="block text-sm text-gray-400 mb-1">Your Agent ID</label>
-          <input type="text" id="modal-agent-id" placeholder="invite-xxxxx-yyyyyy" 
-            class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 font-mono text-sm focus:border-pink-500 focus:outline-none">
+          <label class="block text-sm text-gray-400 mb-1">Sign as:</label>
+          <select id="modal-agent-id" class="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 font-mono text-sm focus:border-pink-500 focus:outline-none">
+            <!-- Populated dynamically with multisig agents -->
+          </select>
         </div>
         <div class="mb-4">
           <label class="block text-sm text-gray-400 mb-1">Your Signature (64-byte Schnorr hex)</label>
@@ -438,8 +439,25 @@
       if (json.success && json.data.sighashes?.[0]) {
         document.getElementById('modal-sighash').textContent = json.data.sighashes[0].sighash;
       } else {
-        // Fallback - compute from creation
         document.getElementById('modal-sighash').textContent = 'Sighash not available - check proposal details';
+      }
+      
+      // Populate agent dropdown from multisig agents
+      const select = document.getElementById('modal-agent-id');
+      select.innerHTML = '';
+      const signedAgents = (json.data?.signatures || []).map(s => s.agentId);
+      const savedAgentId = localStorage.getItem('quorum_agent_id');
+      
+      if (multisigData?.agents) {
+        multisigData.agents.forEach(agent => {
+          const opt = document.createElement('option');
+          opt.value = agent.id;
+          const signed = signedAgents.includes(agent.id);
+          opt.textContent = `${agent.name} (${agent.id.slice(0, 20)}...)${signed ? ' ✓ signed' : ''}`;
+          opt.disabled = signed;
+          if (agent.id === savedAgentId) opt.selected = true;
+          select.appendChild(opt);
+        });
       }
       
       document.getElementById('sign-modal').classList.remove('hidden');

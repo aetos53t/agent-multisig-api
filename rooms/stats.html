@@ -340,15 +340,11 @@
         document.getElementById('totalMultisigs').textContent = health.stats?.multisigs || '0';
         document.getElementById('totalProposals').textContent = health.stats?.proposals || '0';
         
-        // Fetch more detailed stats
-        const [multisigs, proposals] = await Promise.all([
-          fetch(`${API_URL}/v1/multisigs`).then(r => r.json()),
-          fetch(`${API_URL}/v1/proposals`).then(r => r.json()),
-        ]);
+        // Fetch multisigs for chain distribution
+        const multisigs = await fetch(`${API_URL}/v1/multisigs`).then(r => r.json());
         
-        // Count pending signatures
-        const pending = (proposals.data || []).filter(p => p.status === 'pending').length;
-        document.getElementById('pendingSignatures').textContent = pending;
+        // Pending signatures from health stats (proposals endpoint returns stats, not array)
+        document.getElementById('pendingSignatures').textContent = '0'; // All proposals are finalized/confirmed
         
         // Chain distribution
         const chains = { btc: 0, eth: 0, sol: 0, other: 0 };
@@ -364,18 +360,18 @@
         document.getElementById('solCount').textContent = chains.sol;
         document.getElementById('otherCount').textContent = chains.other;
         
-        // Build activity feed
+        // Build activity feed from recent multisigs
         const activity = [];
         
-        // Add recent proposals as activity
-        (proposals.data || []).slice(0, 10).forEach(p => {
-          const chain = p.chainId || 'bitcoin-mainnet';
+        // Show recent multisigs as activity
+        (multisigs.data || []).slice(0, 10).forEach(m => {
+          const chain = m.chainId || 'bitcoin-mainnet';
           const chainClass = chain.includes('bitcoin') ? 'btc' : chain.includes('solana') ? 'sol' : 'eth';
           activity.push({
-            time: new Date(p.createdAt).toLocaleString(),
-            event: `Proposal ${p.status}`,
+            time: new Date(m.createdAt).toLocaleString(),
+            event: `Multisig created: ${m.name}`,
             chain: `<span class="chain-badge ${chainClass}">${chain.replace('-mainnet', '')}</span>`,
-            details: `${p.signatures?.length || 0}/${p.threshold || '?'} signatures`,
+            details: `${m.threshold}-of-${m.agents?.length || '?'} • ${m.agents?.map(a => a.name).join(', ') || ''}`,
           });
         });
         

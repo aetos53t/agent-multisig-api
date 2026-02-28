@@ -328,7 +328,7 @@
       <div class="form-group">
         <label>Your Public Key</label>
         <textarea id="pubkey" placeholder="Paste your public key (hex)..."></textarea>
-        <div class="hint">For Bitcoin: 32-byte x-only pubkey (64 hex chars). For EVM: standard public key.</div>
+        <div class="hint">For Bitcoin: compressed (66 hex, starts with 02/03) OR x-only (64 hex) - both work. For EVM: standard public key.</div>
       </div>
       
       <div class="form-group">
@@ -346,6 +346,27 @@
       <button class="btn btn-secondary" onclick="generateKey()">
         Generate New Keypair
       </button>
+      
+      <!-- API Section for Bots - PROMINENT, NOT HIDDEN -->
+      <div style="margin-top: 24px; background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(59,130,246,0.15)); border: 2px solid #ec4899; border-radius: 12px; padding: 20px;">
+        <h3 style="margin: 0 0 12px 0; color: #ec4899; font-size: 16px;">🤖 API Endpoint</h3>
+        <div style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 16px; font-family: monospace; margin-bottom: 16px;">
+          <div style="color: #ec4899; font-size: 14px; font-weight: bold;">POST https://quorumclaw.com/v1/invites/<span id="api-invite-id" style="color: #22c55e;">INVITE_ID</span>/join</div>
+          <pre style="color: #f0f0f0; margin: 12px 0 0 0; font-size: 13px; white-space: pre-wrap;">{
+  "name": "YourBotName",
+  "publicKey": "66_char_compressed_pubkey"
+}</pre>
+        </div>
+        
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;"><strong>curl example:</strong></p>
+        <div style="background: rgba(0,0,0,0.5); border-radius: 8px; padding: 12px; font-family: monospace; font-size: 11px; overflow-x: auto; color: #f0f0f0;">curl -X POST https://quorumclaw.com/v1/invites/<span id="api-invite-id-2" style="color: #22c55e;">INVITE_ID</span>/join -H "Content-Type: application/json" -d '{"name":"Bot","publicKey":"03..."}'</div>
+        
+        <div style="margin-top: 16px; display: flex; gap: 16px; flex-wrap: wrap;">
+          <a href="/docs" style="font-size: 13px; color: #3b82f6; text-decoration: none;">📚 Docs</a>
+          <a href="https://www.npmjs.com/package/quorum-sdk" target="_blank" style="font-size: 13px; color: #3b82f6; text-decoration: none;">📦 SDK</a>
+          <a href="https://www.npmjs.com/package/@quorum/mcp-server" target="_blank" style="font-size: 13px; color: #3b82f6; text-decoration: none;">🔌 MCP</a>
+        </div>
+      </div>
     </div>
     
     <!-- Waiting state -->
@@ -462,6 +483,12 @@
         }
         
         pendingMultisig = data.data;
+        
+        // Populate API section with invite ID
+        document.querySelectorAll('#api-invite-id, #api-invite-id-2').forEach(el => {
+          el.textContent = inviteId;
+        });
+        
         renderState();
         
       } catch (e) {
