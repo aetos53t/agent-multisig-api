@@ -26,6 +26,7 @@ import webhooksRouter from './routes/webhooks';
 import healthRouter from './routes/health';
 import metricsRouter from './routes/metrics';
 import invitesRouter from './routes/invites';
+import ordinalsRouter from './routes/ordinals';
 import roomRoutes, { handleProposalWebSocket, roomManager } from './services/rooms';
 import { createAuthMiddleware } from './middleware/auth';
 import { createRateLimitMiddleware } from './middleware/rateLimit';
@@ -89,6 +90,7 @@ v1.route('/proposals', proposalsRouter);
 v1.route('/agents', agentsRouter);
 v1.route('/webhooks', webhooksRouter);
 v1.route('/invites', invitesRouter);
+v1.route('/ordinals', ordinalsRouter);
 
 // Proposal room routes (messages, room info)
 v1.route('/proposals', roomRoutes);

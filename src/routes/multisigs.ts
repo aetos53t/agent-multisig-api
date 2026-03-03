@@ -442,4 +442,65 @@ router.get('/', async (c) => {
   });
 });
 
+/**
+ * List ordinals/inscriptions held by multisig
+ */
+router.get('/:id/ordinals', async (c) => {
+  const id = c.req.param('id');
+  
+  const multisig = await repo.getMultisig(id);
+  if (!multisig) {
+    return c.json<ApiResponse<never>>({
+      success: false,
+      error: { code: 'NOT_FOUND', message: `Multisig not found: ${id}` },
+    }, 404);
+  }
+  
+  if (!multisig.address) {
+    return c.json<ApiResponse<never>>({
+      success: false,
+      error: { code: 'NO_ADDRESS', message: 'Multisig has no address' },
+    }, 400);
+  }
+  
+  // Only Bitcoin for ordinals
+  if (!multisig.chainId.startsWith('bitcoin')) {
+    return c.json<ApiResponse<never>>({
+      success: false,
+      error: { code: 'UNSUPPORTED_CHAIN', message: 'Ordinals only available on Bitcoin' },
+    }, 400);
+  }
+  
+  try {
+    // Fetch from Hiro API
+    const res = await fetch(`https://api.hiro.so/ordinals/v1/inscriptions?address=${multisig.address}&limit=60`);
+    if (!res.ok) {
+      throw new Error(`Hiro API error: ${res.status}`);
+    }
+    
+    const data = await res.json();
+    
+    const inscriptions = data.results.map((item: any) => ({
+      id: item.id,
+      number: item.number,
+      contentType: item.content_type,
+      contentLength: item.content_length,
+      satRarity: item.sat_rarity,
+      location: item.location,
+      value: item.value,
+      timestamp: item.timestamp,
+    }));
+    
+    return c.json<ApiResponse<typeof inscriptions>>({
+      success: true,
+      data: inscriptions,
+    });
+  } catch (error: any) {
+    return c.json<ApiResponse<never>>({
+      success: false,
+      error: { code: 'INDEXER_ERROR', message: error.message },
+    }, 500);
+  }
+});
+
 export default router;
