@@ -176,13 +176,15 @@
         if (msJson.success) {
           // It's a multisig ID - create synthetic room data
           multisigData = msJson.data;
+          const agents = msJson.data.agents || [];
           roomData = {
             multisigId: msJson.data.id,
             name: msJson.data.name,
             chainId: msJson.data.chainId,
             threshold: msJson.data.threshold,
-            slots: msJson.data.agents?.length || 0,
-            signers: msJson.data.agents || [],
+            totalSlots: agents.length,
+            slots: agents.map(a => ({ name: a.name, sessionId: a.id, pubkey: a.publicKey })),
+            signers: agents,
             status: 'ready'
           };
           renderRoom();
